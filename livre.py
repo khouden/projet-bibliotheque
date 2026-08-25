@@ -1,7 +1,7 @@
 import tkinter.messagebox
 from tkinter import *
 from tkinter import ttk, messagebox
-import mysql.connector
+from db import connect
 import re
 
 bgColor = "#00c9a7"
@@ -29,8 +29,8 @@ def valider_donnees(titre, pages, prix, auteur):
 
     # Vérifier que les pages sont un entier positif
     try:
-        pages = int(pages)
-        if pages <= 0:
+        pages_int = int(pages)
+        if pages_int <= 0:
             raise ValueError
     except ValueError:
         if len(pages) == 0:
@@ -41,8 +41,8 @@ def valider_donnees(titre, pages, prix, auteur):
 
     # Vérifier que le prix est un flottant positif
     try:
-        prix = float(prix)
-        if prix <= 0:
+        prix_float = float(prix)
+        if prix_float <= 0:
             raise ValueError
     except ValueError:
         if len(prix) == 0:
@@ -93,10 +93,10 @@ class AfficherLivres():
                        foreground=[('selected', 'white')])
 
     def afficherTable(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
 
         cursor = connection.cursor()
-        cursor.execute(f"Select * from livre")
+        cursor.execute("Select * from livre")
         data = cursor.fetchall()
         columns = ('ID', 'Titre', 'Auteur', 'Pages', 'Prix', 'Disponible')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
@@ -172,10 +172,12 @@ class AfficherLivres():
 
         def search_tree():
             query = search_entry.get()
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
 
             cursor = connection.cursor()
-            cursor.execute(f"SELECT * FROM livre WHERE CONCAT_WS('', {'idLiv,Titre,nomAuteur,Pages,Prix,disponible'}) LIKE %s",
+            cursor.execute("SELECT * FROM livre WHERE (COALESCE(idLiv,'') || ' ' || COALESCE(titre,'') || ' ' || "
+                           "COALESCE(nomauteur,'') || ' ' || COALESCE(pages,'') || ' ' || COALESCE(prix,'') || ' ' || "
+                           "COALESCE(disponible,'')) LIKE ?",
                            ('%' + query + '%',))
             data = cursor.fetchall()
 
@@ -269,9 +271,9 @@ class AjouterLivre():
         #disponible = self.disponible_var.get()
 
         if valider_donnees(titre,pages,prix, auteur):
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO Livre (titre,  nomauteur, pages, prix, disponible) VALUES (%s, %s, %s, %s, %s)",
+            cursor.execute("INSERT INTO Livre (titre,  nomauteur, pages, prix, disponible) VALUES (?, ?, ?, ?, ?)",
                            (titre, auteur, pages, prix, "oui"))
             connection.commit()
             messagebox.showinfo("Success", "le livre a été ajouté avec succés")
@@ -395,7 +397,7 @@ class ModifierLivre():
     def afficherInfo(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM Livre")
         data = cursor.fetchall()
@@ -411,11 +413,10 @@ class ModifierLivre():
         pages = self.pages_entry.get().strip()
         prix = self.prix_entry.get().strip()
         auteur = self.auteur_entry.get().strip()
-        disponible = ("oui" if self.disponible_var.get() == "oui" else "non")
         if valider_donnees(titre, pages, prix, auteur):
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
             cursor = connection.cursor()
-            cursor.execute("UPDATE Livre SET titre=%s, pages=%s, nomauteur=%s, prix=%s WHERE idLiv=%s",
+            cursor.execute("UPDATE Livre SET titre=?, pages=?, nomauteur=?, prix=? WHERE idLiv=?",
                            (titre, pages, auteur, prix, self.selected_book_id))
             connection.commit()
             messagebox.showinfo("Success", "le livre a été modifier avec succés")
@@ -434,9 +435,9 @@ class ModifierLivre():
             response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette livre?")
             if response:
                 try:
-                    connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+                    connection = connect()
                     cursor = connection.cursor()
-                    cursor.execute("DELETE FROM Livre WHERE idLiv=%s", (self.selected_book_id,))
+                    cursor.execute("DELETE FROM Livre WHERE idLiv=?", (self.selected_book_id,))
                     connection.commit()
                     messagebox.showinfo("Success", "Le livre a été supprimé avec succé")
                     self.afficherInfo()
@@ -467,7 +468,6 @@ class ModifierLivre():
         self.pages_entry.insert(0, selected_values[3])
         self.prix_entry.delete(0, END)
         self.prix_entry.insert(0, selected_values[4])
-        self.disponible_var.set(selected_values[5])
 
 
     def trierColumn(self, treeview, col, reverse):

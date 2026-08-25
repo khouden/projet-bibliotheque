@@ -1,12 +1,7 @@
 from tkinter import *
 from tkinter import ttk,messagebox
-import mysql.connector
+from db import connect
 from mainMenu import MainMenu
-# connection base de données
-host = 'localhost'
-user = 'root'
-password = ''
-database = 'bibliotheque'
 
 
 bgColor = "#00c9a7"
@@ -98,10 +93,10 @@ class Login:
     def login(self):
         username = self.user.get()
         password = self.password.get()
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque" )
+        connection = connect()
 
         cursor = connection.cursor()
-        cursor.execute(f"Select * from login where username=%s and password=%s", (username, password))
+        cursor.execute("Select * from login where username=? and password=?", (username, password))
         data = cursor.fetchone()
         cursor.close()
         connection.close()

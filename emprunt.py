@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from datetime import datetime
-import mysql.connector
+from db import connect
 import re
 
 bgColor = "#00c9a7"
@@ -79,11 +79,11 @@ class AfficherEmprunts():
                        foreground=[('selected', 'white')])
 
     def afficherTable(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
 
         cursor = connection.cursor()
-        cursor.execute(f"select e.idEmp, a.nom, l.titre, e.dateemprunt, e.status from emprunt e inner join adherent a"
-                       f" inner join livre l on e.idAdh = a.idAdh where e.idLiv = l.idLiv order by e.idEmp")
+        cursor.execute("select e.idEmp, a.nom, l.titre, e.dateemprunt, e.status from emprunt e "
+                       "join adherent a on e.idAdh = a.idAdh join livre l on e.idLiv = l.idLiv order by e.idEmp")
         data = cursor.fetchall()
         columns = ('ID', 'Nom Adherent', 'Titre de Livre', 'Date emprunt', 'Status')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
@@ -140,11 +140,14 @@ class AfficherEmprunts():
 
         def search_tree():
             query = search_entry.get()
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
 
             cursor = connection.cursor()
             cursor.execute(
-                f"SELECT e.idEmp, a.nom, l.titre, e.dateemprunt, e.status from emprunt e inner join adherent a inner join livre l WHERE e.idAdh = a.idAdh and e.idLiv = l.idLiv and CONCAT_WS('', {'e.idEmp,a.nom,l.titre,e.dateemprunt,e.status'}) LIKE %s",
+                "SELECT e.idEmp, a.nom, l.titre, e.dateemprunt, e.status FROM emprunt e "
+                "JOIN adherent a ON e.idAdh = a.idAdh JOIN livre l ON e.idLiv = l.idLiv "
+                "WHERE (COALESCE(e.idEmp,'') || ' ' || COALESCE(a.nom,'') || ' ' || COALESCE(l.titre,'') || ' ' || "
+                "COALESCE(e.dateemprunt,'') || ' ' || COALESCE(e.status,'')) LIKE ?",
                 ('%' + query + '%',))
             data = cursor.fetchall()
 
@@ -221,35 +224,33 @@ class PrendreEmprunt():
         self.fill_combobox()
 
     def prendre_livre(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
-        cursor = connection.cursor()
-        livre_id = self.livre_combobox.get().split('-')[0].strip()
-        adherent_id = self.adherent_combobox.get().split('-')[0].strip()
-        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
-        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
-        aujourdhui = datetime.today().date()
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
             messagebox.showinfo("Erreur", "Vous devez sélectionner toutes les entrées.")
             return
+        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
+        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
+        aujourdhui = datetime.today().date()
         if aujourdhui > date_emprunt.date():
             messagebox.showinfo("Validation de la date", "La date doit être supérieure ou égale à la date d'aujourd'hui.")
             return
+        livre_id = self.livre_combobox.get().split('-')[0].strip()
+        adherent_id = self.adherent_combobox.get().split('-')[0].strip()
 
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
 
-        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (%s, %s, %s, %s)",
+        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (?, ?, ?, ?)",
                        (adherent_id, livre_id, date_emprunt_mysql, "sortie"))
-        cursor.execute("UPDATE livre SET disponible = 'non' WHERE idLiv = %s", (livre_id,))
+        cursor.execute("UPDATE livre SET disponible = 'non' WHERE idLiv = ?", (livre_id,))
         connection.commit()
+        cursor.close()
+        connection.close()
         messagebox.showinfo("Success", "L'emprunt a été ajouté avec succès.")
         clearPage(self.root)
         AfficherEmprunts(self.root)
-        cursor.close()
-        connection.close()
 
     def fill_combobox(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
         cursor.execute("SELECT idLiv, titre FROM Livre where disponible = 'oui'")
         livres = cursor.fetchall()
@@ -327,42 +328,38 @@ class RetourneEmprunt():
         self.fill_combobox()
 
     def retourne_livre(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
-        cursor = connection.cursor()
-        livre_id = self.livre_combobox.get().split('-')[0].strip()
-        adherent_id = self.adherent_combobox.get().split('-')[0].strip()
-        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
-        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
-        aujourdhui = datetime.today().date()
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
             messagebox.showinfo("Erreur", "Vous devez sélectionner toutes les entrées.")
             return
+        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
+        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
+        aujourdhui = datetime.today().date()
         if aujourdhui > date_emprunt.date():
             messagebox.showinfo("Validation de la date", "La date doit être supérieure ou égale à la date d'aujourd'hui.")
             return
+        livre_id = self.livre_combobox.get().split('-')[0].strip()
+        adherent_id = self.adherent_combobox.get().split('-')[0].strip()
 
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
 
-        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (%s, %s, %s, %s)",
-                       (adherent_id, livre_id, date_emprunt_mysql, "entrée"))
-        cursor.execute("UPDATE livre SET disponible = 'oui' WHERE idLiv = %s", (livre_id,))
+        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (?, ?, ?, ?)",
+                       (adherent_id, livre_id, date_emprunt_mysql, "entree"))
+        cursor.execute("UPDATE livre SET disponible = 'oui' WHERE idLiv = ?", (livre_id,))
         connection.commit()
+        cursor.close()
+        connection.close()
         messagebox.showinfo("Success", "L'emprunt a été ajouté avec succès.")
         clearPage(self.root)
         AfficherEmprunts(self.root)
-        cursor.close()
-        connection.close()
 
     def fill_combobox(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
-        cursor.execute("SELECT Adherent.idAdh, Adherent.nom, Adherent.tel, Adherent.email, Livre.titre FROM Adherent "
-                       "JOIN ( SELECT idAdh, IdLiv, MAX(dateemprunt) AS latest_date FROM Emprunt GROUP BY idAdh, "
-                       "IdLiv ) AS LatestEmprunt ON Adherent.idAdh = LatestEmprunt.idAdh JOIN Emprunt ON "
-                       "LatestEmprunt.idAdh = Emprunt.idAdh AND LatestEmprunt.IdLiv = Emprunt.IdLiv AND "
-                       "LatestEmprunt.latest_date = Emprunt.dateemprunt JOIN Livre ON Emprunt.IdLiv = Livre.idLiv "
-                       "WHERE Emprunt.status = 'sortie' AND Livre.disponible = 'non' group by Adherent.idAdh")
+        cursor.execute("SELECT DISTINCT Adherent.idAdh, Adherent.nom FROM Adherent "
+                       "JOIN Emprunt ON Emprunt.idAdh = Adherent.idAdh "
+                       "JOIN Livre ON Livre.idLiv = Emprunt.idLiv "
+                       "WHERE Emprunt.status = 'sortie' AND Livre.disponible = 'non'")
         adherents = cursor.fetchall()
         self.adherent_combobox["values"] = [f"{adherent[0]} - {adherent[1]}" for adherent in adherents]
 
@@ -373,12 +370,12 @@ class RetourneEmprunt():
 
     def on_combobox_select(self, event):
         adherent_id = self.adherent_combobox.get().split('-')[0].strip()
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
         cursor.execute(
             "SELECT Livre.idLiv, Livre.titre, Livre.pages, Livre.nomauteur, Livre.prix, Livre.disponible FROM "
             "Adherent JOIN Emprunt ON Adherent.idAdh = Emprunt.idAdh JOIN Livre ON Emprunt.IdLiv = Livre.idLiv WHERE "
-            "Adherent.idAdh = %s AND Emprunt.status = 'sortie' and Livre.disponible = 'non'",
+            "Adherent.idAdh = ? AND Emprunt.status = 'sortie' and Livre.disponible = 'non'",
             (adherent_id,))
         livres = cursor.fetchall()
         self.livre_combobox["values"] = [f"{livre[0]} - {livre[1]}" for livre in livres]

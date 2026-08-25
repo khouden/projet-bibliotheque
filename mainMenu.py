@@ -1,6 +1,5 @@
 from tkinter import *
 from tkinter import ttk, messagebox
-import mysql.connector
 
 from livre import *
 from adherent import *
@@ -177,10 +176,6 @@ class MainMenu:
     def retourner_emprunt(self):
         self.clear_widgets()
         RetourneEmprunt(self.root)
-
-    def modifier_emprunt(self):
-        self.clear_widgets()
-        ModifierAdherent(self.root)
 
     # fermer le widndow actuel
     def clear_widgets(self):

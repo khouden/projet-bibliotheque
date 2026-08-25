@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+bibliotheque.db
+build/
+dist/
+*.spec

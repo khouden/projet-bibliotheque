@@ -1,7 +1,7 @@
 import tkinter.messagebox
 from tkinter import *
 from tkinter import ttk, messagebox
-import mysql.connector
+from db import connect
 import re
 
 bgColor = "#00c9a7"
@@ -77,7 +77,7 @@ class AfficherAdherents():
                        foreground=[('selected', 'white')])
 
     def afficherTable(self):
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
 
         cursor = connection.cursor()
         cursor.execute(f"Select * from adherent")
@@ -137,10 +137,11 @@ class AfficherAdherents():
 
         def search_tree():
             query = search_entry.get()
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
 
             cursor = connection.cursor()
-            cursor.execute(f"SELECT * FROM adherent WHERE CONCAT_WS('', {'idAdh,nom,tel,email'}) LIKE %s",
+            cursor.execute("SELECT * FROM adherent WHERE (COALESCE(idAdh,'') || ' ' || COALESCE(nom,'') || ' ' || "
+                           "COALESCE(tel,'') || ' ' || COALESCE(email,'')) LIKE ?",
                            ('%' + query + '%',))
             data = cursor.fetchall()
 
@@ -215,9 +216,9 @@ class AjouterAdherent():
         email = self.email_entry.get().strip()
 
         if valider_donnees(nom, tel, email):
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO Adherent (nom,  tel, email) VALUES (%s, %s, %s)",
+            cursor.execute("INSERT INTO Adherent (nom,  tel, email) VALUES (?, ?, ?)",
                            (nom, tel, email))
             connection.commit()
             messagebox.showinfo("Success", "l'adherent a été ajouté avec succés")
@@ -314,7 +315,7 @@ class ModifierAdherent():
     def afficherInfo(self):
         for item in self.tree.get_children():
             self.tree.delete(item)
-        connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+        connection = connect()
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM adherent")
         data = cursor.fetchall()
@@ -330,9 +331,9 @@ class ModifierAdherent():
         tel = self.tel_entry.get().strip()
         email = self.email_entry.get().strip()
         if valider_donnees(nom, tel, email):
-            connection = mysql.connector.connect(host="localhost", user="root", password="", database="bibliotheque")
+            connection = connect()
             cursor = connection.cursor()
-            cursor.execute("UPDATE adherent SET nom=%s, tel=%s, email=%s WHERE idAdh=%s",
+            cursor.execute("UPDATE adherent SET nom=?, tel=?, email=? WHERE idAdh=?",
                            (nom, tel, email, self.selected_adherent_id))
             connection.commit()
             messagebox.showinfo("Success", "l'adherent a été modifier avec succés")
@@ -353,11 +354,10 @@ class ModifierAdherent():
                 response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette adherent?")
 
                 if response:
-                    connection = mysql.connector.connect(host="localhost", user="root", password="",
-                                                         database="bibliotheque")
+                    connection = connect()
                     cursor = connection.cursor()
 
-                    cursor.execute("DELETE FROM Adherent WHERE idAdh=%s", (self.selected_adherent_id,))
+                    cursor.execute("DELETE FROM Adherent WHERE idAdh=?", (self.selected_adherent_id,))
                     connection.commit()
                     messagebox.showinfo("Success", "Adherent a été supprimé avec succée")
                     self.afficherInfo()

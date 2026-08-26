@@ -4,88 +4,108 @@ Context file for AI agents working on this repository. Read this before making a
 
 ## Project Overview
 
-**projet-bibliotheque** ("library project") is a French-language **desktop Library Management System** built as a school/team project by Abdellah Khouden, Abderrahim Bensaid, and Othman Elhyane (supervised by Mr. Abdellah Sair).
+**projet-bibliotheque** ("library project") is a French-language **standalone desktop Library Management System** built as a school/team project by Abdellah Khouden, Abderrahim Bensaid, and Othman Elhyane (supervised by Mr. Abdellah Sair).
 
 It manages three entities:
 - **Livre** (books): add, list/search/sort, modify, delete
 - **Adherent** (members): add, list/search/sort, modify, delete
 - **Emprunt** (loans): take a book (status `sortie`), return a book (status `entree`), list/search loans
 
-Authentication is a single login screen backed by a `login` table in MySQL.
+Authentication is a single login screen backed by a `login` table. Default seeded account: **admin / admin** (stored as a PBKDF2 hash).
 
 ## Tech Stack
 
-- **Python 3** (uses `match/case`, so requires **3.10+**)
+- **Python 3.10+** (uses `match/case`)
 - **GUI**: Tkinter / ttk (`PhotoImage` for PNGs, no Pillow)
 - **Calendar widget**: `tkcalendar` (`DateEntry`)
-- **Database**: MySQL via `mysql-connector-python`
-- No virtual env, no `requirements.txt`, no linter/test config committed.
-  Implicit dependencies to install: `mysql-connector-python`, `tkcalendar`.
+- **Database**: SQLite via stdlib `sqlite3`, wrapped by `db.py`. The database is a single file `bibliotheque.db`, created automatically next to the app on first launch. No server, no credentials.
+- Only external dependency: `tkcalendar` (`requirements.txt`). No virtual env committed.
 
 ## How to Run
 
 ```powershell
+pip install -r requirements.txt
 python main.py
 ```
 
-Requirements:
-- A local MySQL server must be running with database `bibliotheque`
-- Connection assumed everywhere: `host=localhost, user=root, password=""` (empty password, XAMPP/WAMP-style default)
-- Rubik font installed (UI falls back gracefully if missing)
+Log in with `admin` / `admin`. Delete `bibliotheque.db` to reset to factory state (auto re-seeded on next start).
 
 ## File Map
 
 | File | Role |
 |---|---|
-| `main.py` | Entry point. Creates root window (925x600), starts `Login`. The direct `MainMenu(root)` call is commented out - login navigates to it on success. |
-| `login.py` | Login screen class `Login`. Validates credentials against `login` table, then swaps content frame for `MainMenu`. |
+| `main.py` | Entry point. Calls `init_db()` then creates root window (925x600) and starts `Login`. |
+| `login.py` | Login screen class `Login`. Fetches the user by username, verifies PBKDF2 hash via `db.verify_password`, then swaps content frame for `MainMenu`. |
 | `mainMenu.py` | `MainMenu`: menubar (options/Livre/Adherent/Emprunt) + home screen with 3 comboboxes acting as quick navigation. Routes to page classes via `match/case`. |
-| `livre.py` | Book pages: `AfficherLivres` (Treeview + search + column sort), `AjouterLivre`, `ModifierLivre` (also delete). Contains shared `valider_donnees()` and `clearPage()`. |
-| `adherent.py` | Member pages: `AfficherAdherents`, `AjouterAdherent`, `ModifierAdherent` (also delete). Own copies of `valider_donnees()` / `clearPage()`. |
-| `emprunt.py` | Loan pages: `AfficherEmprunts`, `PrendreEmprunt` (checkout), `RetourneEmprunt` (return). Uses `tkcalendar.DateEntry`. |
-| `code in one file.py` | Legacy monolithic prototype (~441 lines). Reference only - do not import or edit. |
-| `*.png` | UI assets loaded by relative path: `icon.png`, `login2.png`, `background.png`, `ajouter_livre.png`, `ajouter_adherent.png`, `ajouter_emprunt.png`. Must stay in repo root (app breaks if run from another cwd). |
+| `db.py` | SQLite layer: `connect()` (foreign keys ON), `init_db()` (schema bootstrap + seeding + plaintext-password upgrade), `hash_password`/`verify_password` (PBKDF2-HMAC-SHA256, stored as `salt$digest` hex). |
+| `paths.py` | `asset_path(filename)`: resolves PNG assets relative to the script dir, or `sys._MEIPASS` when frozen by PyInstaller. |
+| `livre.py` | Book pages: `AfficherLivres` (Treeview + search + column sort), `AjouterLivre`, `ModifierLivre` (also delete). Shared `valider_donnees()` and `clearPage()`. |
+| `adherent.py` | Member pages: `AfficherAdherents`, `AjouterAdherent`, `ModifierAdherent` (also delete). Own copy of `valider_donnees()` / `clearPage()`. |
+| `emprunt.py` | Loan pages: `AfficherEmprunts`, `PrendreEmprunt` (checkout), `RetourneEmprunt` (return = UPDATE existing row). Uses `tkcalendar.DateEntry`. |
+| `TODO.md` | Remaining roadmap to a shippable Windows exe. Keep in sync with actual progress. |
+| `code in one file.py` | Legacy monolithic MySQL-era prototype (~441 lines). Reference only - do not import or edit. |
+| `*.png` | UI assets loaded via `asset_path`: `icon.png`, `login2.png`, `background.png`, `ajouter_livre.png`, `ajouter_adherent.png`, `ajouter_emprunt.png`. Must stay in repo root. |
+| `bibliotheque.db` | Runtime artifact (gitignored). Never commit; safe to delete. |
 
-## Database Schema (database: `bibliotheque`)
+## Database Schema (SQLite, file `bibliotheque.db`)
 
-No schema file is committed. Tables inferred from queries in the code:
+Created by `db.init_db()` if missing:
 
 ```sql
-login    (username, password)                        -- plaintext credentials
-livre    (idLiv PK, titre, nomauteur, pages, prix,
-          disponible 'oui'|'non')                    -- 'oui' = available on shelf
-adherent (idAdh PK, nom, tel, email)                 -- tel: Moroccan 06/07/05XXXXXXXX
-emprunt  (idEmp PK AUTO_INC, idAdh FK->adherent,
-          idLiv FK->livre, dateemprunt DATE,
-          status 'sortie'|'entree')                  -- sortie=checked out, entree=returned
+CREATE TABLE login (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL              -- format: hex_salt$hex_digest (PBKDF2-SHA256, 100k iters)
+);
+CREATE TABLE livre (
+    idLiv INTEGER PRIMARY KEY AUTOINCREMENT,
+    titre TEXT NOT NULL,
+    nomauteur TEXT NOT NULL,
+    pages INTEGER,
+    prix REAL,
+    disponible TEXT NOT NULL DEFAULT 'oui' CHECK (disponible IN ('oui','non'))
+);
+CREATE TABLE adherent (
+    idAdh INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    tel TEXT,                            -- optional; international format, 7-15 digits
+    email TEXT
+);
+CREATE TABLE emprunt (
+    idEmp INTEGER PRIMARY KEY AUTOINCREMENT,
+    idAdh INTEGER NOT NULL REFERENCES adherent(idAdh),
+    idLiv INTEGER NOT NULL REFERENCES livre(idLiv),
+    dateemprunt TEXT NOT NULL,           -- 'YYYY-MM-DD'
+    status TEXT NOT NULL CHECK (status IN ('sortie','entree'))
+);
 ```
 
-Loan lifecycle: `PrendreEmprunt` inserts an emprunt row with status `sortie` and sets `livre.disponible = 'non'`. `RetourneEmprunt` inserts a row with status `entree` and sets `disponible = 'oui'`. Deletes of books/members with existing loans are blocked by FK constraints (caught by bare excepts showing an error messagebox).
+Loan lifecycle: `PrendreEmprunt` INSERTs an emprunt (`sortie`) + sets `disponible='non'`. `RetourneEmprunt` UPDATEs the existing `sortie` row to `entree` (guarded by `cursor.rowcount`) + sets `disponible='oui'`. Foreign keys are enforced (`PRAGMA foreign_keys=ON`), so deleting a livre/adherent that has emprunts raises `sqlite3.IntegrityError`, caught in the delete flows with a friendly messagebox.
 
 ## Architecture & Conventions
 
 - **Single-window SPA pattern**: one `Tk` root forever. Each page is a class taking `root` in `__init__` and packing a `Frame` into it. Navigation = destroy all child `Frame`s (`clearPage()` / `clear_widgets()`) then instantiate the next page class. There is no router.
-- **DB access**: raw `mysql.connector.connect(...)` opened/closed inside every method. No connection pooling, no ORM, no DAO layer. Queries are parameterized (%s) except search, which interpolates a hardcoded column list into `CONCAT_WS`.
-- **Validation**: per-module `valider_donnees()` functions with regex checks (author/member name letters-only, tel `^(06|07|05)\d{8}$`, email format, positive int pages, positive float prix) + `messagebox.showerror` feedback.
+- **DB access**: `from db import connect`; open/close inside each method. Parameterized `?` placeholders everywhere. Search filters use `(COALESCE(col,'') || ' ' || ...) LIKE ?` concatenation chains.
+- **Validation**: `valider_donnees()` per module with regex checks. Tel is **optional**, validated as international format (optional `+`, digits/spaces/dashes/parens/dots, 7-15 digits). Author/member name letters-only; positive int pages; positive float prix. Errors via `messagebox.showerror` in French.
+- **Error handling**: delete flows catch `sqlite3.IntegrityError` (FK block) separately from generic `sqlite3.Error`; connections closed in `finally`.
 - **UI constants** duplicated at top of every module:
   - `bgColor = "#00c9a7"` (teal background), `prColor = "#12192c"` (dark navy), `textHolderColor = "#7a7e89"`
   - Font: `('Rubik', size)`
-- **Treeview tables**: styled as `"Custom.Treeview"`, zebra rows via `oddrow` tag, sortable columns by clicking headings (`trierColumn`), search bar filtering via SQL LIKE.
-- **Combobox ID convention**: option text is `"ID - label"`; code parses the ID with `.split('-')[0].strip()` before SQL calls. Preserve this format when touching comboboxes.
+- **Treeview tables**: styled `"Custom.Treeview"`, zebra rows via `oddrow` tag, sortable columns (`trierColumn`), SQL-LIKE search bar.
+- **Combobox ID convention**: option text is `"ID - label"`; parsed with `.split('-')[0].strip()` before SQL calls. Preserve this format when touching comboboxes.
 - All user-facing strings are **French**. Keep them French.
 
 ## Known Quirks / Gotchas
 
-1. `ModifierLivre.modifier_livre` (livre.py ~line 414) references `self.disponible_var`, which no longer exists (checkbox commented out) -> clicking "Modifier Livre" raises AttributeError. Bug present in HEAD.
-2. DB credentials are hardcoded and repeated in every module (no config module). If you centralize them, update all 5 files.
-3. `valider_donnees` in `emprunt.py` is dead code (copied from adherent.py, never called).
-4. `RetourneEmprunt.retourne_livre` does not verify the selected book belongs to the selected adherent beyond combobox filtering.
-5. Dates: UI uses `dd/mm/yyyy`, MySQL needs `%Y-%m-%d`; conversion happens via strptime/strftime in emprunt flows.
-6. `mainMenu.quitter` calls `tkinter.messagebox` - works only because `messagebox` was imported elsewhere; keep imports intact if refactoring.
-7. Assets load via bare relative filenames -> app must run from repo root.
+1. `valider_donnees` in `emprunt.py` is dead code (copied from adherent.py, never called) - kept in sync anyway.
+2. The date field on the return screen is display-only; the schema stores a single `dateemprunt` (borrow date). Return date is not recorded anywhere.
+3. `mainMenu.quitter` calls `tkinter.messagebox.askyesno` - works only because `messagebox` was imported elsewhere; keep imports intact if refactoring.
+4. Modifier pages stash the selected row's ID in `self.selected_book_id` / `self.selected_adherent_id` set by `selecterCol`.
+5. Assets load via `asset_path`, so cwd no longer matters, but PNGs must ship alongside the code (or be `--add-data`-bundled when freezing).
+6. Window is fixed 925x600, non-resizable; layouts use absolute `place()` coordinates.
+7. `code in one file.py` predates the SQLite migration and still references MySQL - ignore it.
 
 ## When Making Changes
 
-- Match the existing style: French labels/messages, duplicated color constants, page-class pattern, parameterized SQL.
+- Match the existing style: French labels/messages, duplicated color constants, page-class pattern, parameterized SQL through `db.connect()`.
 - Do not introduce frameworks (Flask, SQLAlchemy, etc.) unless explicitly asked.
-- There are no tests or linting configured; verify changes by running `python main.py` against a local `bibliotheque` database.
+- There are no tests or linting configured; verify changes by running `python main.py` and exercising the affected pages against the local `bibliotheque.db`.

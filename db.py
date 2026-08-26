@@ -1,8 +1,30 @@
 import os
 import sys
 import sqlite3
+import hashlib
+import hmac
 
 DB_NAME = "bibliotheque.db"
+
+PBKDF2_ITERATIONS = 100_000
+
+
+def hash_password(password, salt=None):
+    if salt is None:
+        salt = os.urandom(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS)
+    return f"{salt.hex()}${digest.hex()}"
+
+
+def verify_password(password, stored):
+    parts = stored.split("$")
+    if len(parts) != 2:
+        return False
+    try:
+        salt = bytes.fromhex(parts[0])
+    except ValueError:
+        return False
+    return hmac.compare_digest(hash_password(password, salt), stored)
 
 
 def db_path():
@@ -58,7 +80,13 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM login")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO login (username, password) VALUES (?, ?)",
-                       ("admin", "admin"))
+                       ("admin", hash_password("admin")))
+    else:
+        cursor.execute("SELECT username, password FROM login")
+        for username, password in cursor.fetchall():
+            if "$" not in password:
+                cursor.execute("UPDATE login SET password=? WHERE username=?",
+                               (hash_password(password), username))
     connection.commit()
     cursor.close()
     connection.close()

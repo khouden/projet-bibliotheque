@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk,messagebox
-from db import connect
+from db import connect, verify_password
 from paths import asset_path
 from mainMenu import MainMenu
 
@@ -97,11 +97,11 @@ class Login:
         connection = connect()
 
         cursor = connection.cursor()
-        cursor.execute("Select * from login where username=? and password=?", (username, password))
+        cursor.execute("Select * from login where username=?", (username,))
         data = cursor.fetchone()
         cursor.close()
         connection.close()
-        if data:
+        if data and verify_password(password, data[1]):
             self.contentframe.pack_forget()
             MainMenu(self.root)
         else:

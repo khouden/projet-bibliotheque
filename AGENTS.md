@@ -28,7 +28,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Log in with your password (first launch opens the "Première utilisation" screen to define it). Delete `bibliotheque.db` to reset to factory state (setup screen reappears on next start).
+Log in with your password (first launch opens the "First use" screen to define it). Delete `bibliotheque.db` to reset to factory state (setup screen reappears on next start).
 
 ## File Map
 
@@ -93,7 +93,8 @@ Loan lifecycle: `PrendreEmprunt` INSERTs an emprunt (`sortie`) + sets `disponibl
   - Font: `('Rubik', size)`
 - **Treeview tables**: styled `"Custom.Treeview"`, zebra rows via `oddrow` tag, sortable columns (`trierColumn`), SQL-LIKE search bar.
 - **Combobox ID convention**: option text is `"ID - label"`; parsed with `.split('-')[0].strip()` before SQL calls. Preserve this format when touching comboboxes.
-- All user-facing strings are **French**. Keep them French.
+- All user-facing strings are **English** (UI translated 2026; keep them English).
+- **Loan status tokens stay French in the database**: `'sortie'`/`'entree'` are stored values guarded by a CHECK constraint and used in query filters. `AfficherEmprunts` maps them to `Borrowed`/`Returned` for display via `STATUS_LABELS`. Never translate the tokens themselves without migrating existing rows + the CHECK constraint.
 
 ## Known Quirks / Gotchas
 

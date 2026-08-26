@@ -13,48 +13,52 @@ prLightColor = "#c4fff3"
 textHolderColor = "#7a7e89"
 
 
-# validation fonction
+# validation function
 def valider_donnees(nom, tel, email):
-    # Vérification du nom (au moins 2 lettres alphabétiques)
+    # Name must contain at least 2 alphabetic characters
     if not re.match(r'^[a-zA-Z\s]{2,}$', nom):
         if len(nom) == 0:
-            messagebox.showerror("Erreur", "Le nom est obligatoire.")
+            messagebox.showerror("Error", "Name is required.")
         else:
-            messagebox.showerror("Erreur", "Le nom doit contenir au moins 2 lettres alphabétiques.")
+            messagebox.showerror("Error", "Name must contain at least 2 alphabetic characters.")
         return False
 
-    # Vérification du téléphone (optionnel, format international)
+    # Phone is optional; international format when provided
     if tel:
         if not re.match(r'^\+?[\d\s\-\(\)\.]+$', tel.strip()):
-            messagebox.showerror("Erreur", "Le numéro de téléphone contient des caractères invalides.")
+            messagebox.showerror("Error", "Phone number contains invalid characters.")
             return False
         chiffres = re.sub(r'\D', '', tel)
         if not 7 <= len(chiffres) <= 15:
-            messagebox.showerror("Erreur", "Le numéro de téléphone doit contenir entre 7 et 15 chiffres.")
+            messagebox.showerror("Error", "Phone number must contain between 7 and 15 digits.")
             return False
 
-    # Vérification de l'email (format email)
+    # Email must be a valid address
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
         if len(email) == 0:
-            messagebox.showerror("Erreur", "L'email est obligatoire.")
+            messagebox.showerror("Error", "Email is required.")
         else:
-            messagebox.showerror("Erreur", "L'email doit être valide.")
+            messagebox.showerror("Error", "Email must be valid.")
         return False
 
     return True
 
 
+# clear the current page content
 def clearPage(root):
     for widget in root.winfo_children():
         if isinstance(widget, Frame):
             widget.destroy()
 
 
+STATUS_LABELS = {"sortie": "Borrowed", "entree": "Returned"}
+
+
 class AfficherEmprunts():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Emprunt")
+        self.root.title("Library - Loans")
 
         # content frame
         self.contentframe = Frame(self.root, bg=bgColor, padx=50, pady=50)
@@ -87,7 +91,7 @@ class AfficherEmprunts():
         cursor.execute("select e.idEmp, a.nom, l.titre, e.dateemprunt, e.status from emprunt e "
                        "join adherent a on e.idAdh = a.idAdh join livre l on e.idLiv = l.idLiv order by e.idEmp")
         data = cursor.fetchall()
-        columns = ('ID', 'Nom Adherent', 'Titre de Livre', 'Date emprunt', 'Status')
+        columns = ('ID', 'Member', 'Book Title', 'Loan Date', 'Status')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
         self.tree.tag_configure("oddrow", background="lightblue")
 
@@ -102,7 +106,9 @@ class AfficherEmprunts():
             self.tree.column(col, width=100, stretch=True)
 
         for i, item in enumerate(data):
-            self.tree.insert("", "end", values=item, tags=("oddrow" if i % 2 == 1 else ""))
+            values = list(item)
+            values[4] = STATUS_LABELS.get(values[4], values[4])
+            self.tree.insert("", "end", values=values, tags=("oddrow" if i % 2 == 1 else ""))
 
         self.tree.pack(fill="both", expand=True)
         cursor.close()
@@ -155,7 +161,8 @@ class AfficherEmprunts():
 
             tree.delete(*tree.get_children())
             for i in range(len(data)):
-                item = data[i]
+                item = list(data[i])
+                item[4] = STATUS_LABELS.get(item[4], item[4])
                 self.tree.insert("", "end", values=item, tags=("oddrow" if i % 2 == 1 else ""))
 
         search_button = Button(search_frame, text="Search", command=search_tree, font=('Rubik', 12), bg=prColor,
@@ -168,7 +175,7 @@ class PrendreEmprunt():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Ajouter Emprunt - Prendre Livre")
+        self.root.title("Library - Borrow a Book")
 
         # ajouter style au combobox
         self.root.option_add('*TCombobox*Listbox.selectBackground', prColor)
@@ -191,18 +198,18 @@ class PrendreEmprunt():
         self.form_options.pack(padx=10, pady=10)
 
         # title
-        self.title = Label(self.form_options, text="Prendre un livre", fg=prColor, font=('Rubik', 23), bg=bgColor)
+        self.title = Label(self.form_options, text="Borrow a book", fg=prColor, font=('Rubik', 23), bg=bgColor)
         self.title.grid(row=0, column=1, columnspan=2, rowspan=2, padx=10, pady=10, sticky="s")
 
-        # adherent combobox
-        self.adherent_label = Label(self.form_options, text="Adherent:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        # member combobox
+        self.adherent_label = Label(self.form_options, text="Member:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.adherent_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
         self.adherent_combobox = ttk.Combobox(self.form_options, font=('Rubik', 12), width=30, state="readonly")
         self.adherent_combobox.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
 
         # livre combobox
-        self.livre_label = Label(self.form_options, text="Livre:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.livre_label = Label(self.form_options, text="Book:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.livre_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
         self.livre_combobox = ttk.Combobox(self.form_options, font=('Rubik', 12), state="readonly", width=30)
         self.livre_combobox.grid(row=3, column=1, padx=10, pady=10, sticky="w")
@@ -217,7 +224,7 @@ class PrendreEmprunt():
         self.date_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
 
-        self.modify_button = Button(self.form_options, width=16, text="Ajouter Emprunt", bg=bgColor, fg=prColor,
+        self.modify_button = Button(self.form_options, width=16, text="Borrow", bg=bgColor, fg=prColor,
                                     relief="solid",
                                     font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                     activeforeground=bgColor,
@@ -227,13 +234,13 @@ class PrendreEmprunt():
 
     def prendre_livre(self):
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
-            messagebox.showinfo("Erreur", "Vous devez sélectionner toutes les entrées.")
+            messagebox.showinfo("Error", "Please select all fields.")
             return
         date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
         date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
         aujourdhui = datetime.today().date()
         if aujourdhui > date_emprunt.date():
-            messagebox.showinfo("Validation de la date", "La date doit être supérieure ou égale à la date d'aujourd'hui.")
+            messagebox.showinfo("Date validation", "The date must be today or later.")
             return
         livre_id = self.livre_combobox.get().split('-')[0].strip()
         adherent_id = self.adherent_combobox.get().split('-')[0].strip()
@@ -247,7 +254,7 @@ class PrendreEmprunt():
         connection.commit()
         cursor.close()
         connection.close()
-        messagebox.showinfo("Success", "L'emprunt a été ajouté avec succès.")
+        messagebox.showinfo("Success", "Loan recorded successfully.")
         clearPage(self.root)
         AfficherEmprunts(self.root)
 
@@ -268,7 +275,7 @@ class RetourneEmprunt():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Ajouter Emprunt - Retourner un Livre")
+        self.root.title("Library - Return a Book")
 
         # ajouter style au combobox
         # add style to combobox
@@ -292,11 +299,11 @@ class RetourneEmprunt():
         self.form_options.pack(padx=10, pady=10)
 
         # title
-        self.title = Label(self.form_options, text="Retourner un livre", fg=prColor, font=('Rubik', 23), bg=bgColor)
+        self.title = Label(self.form_options, text="Return a book", fg=prColor, font=('Rubik', 23), bg=bgColor)
         self.title.grid(row=0, column=1, columnspan=2, rowspan=2, padx=10, pady=10, sticky="s")
 
-        # adherent combobox
-        self.adherent_label = Label(self.form_options, text="Adherent:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        # member combobox
+        self.adherent_label = Label(self.form_options, text="Member:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.adherent_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
         self.adherent_combobox = ttk.Combobox(self.form_options, font=('Rubik', 12), state="readonly", width=30)
         self.adherent_combobox.grid(row=2, column=1, padx=10, pady=10, sticky="w")
@@ -305,7 +312,7 @@ class RetourneEmprunt():
 
         # livre combobox
 
-        self.livre_label = Label(self.form_options, text="Livre:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.livre_label = Label(self.form_options, text="Book:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.livre_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
         self.livre_combobox = ttk.Combobox(self.form_options, font=('Rubik', 12), state="readonly", width=30)
         self.livre_combobox.grid(row=3, column=1, padx=10, pady=10, sticky="w")
@@ -321,7 +328,7 @@ class RetourneEmprunt():
         self.date_entry.config(state='readonly')
 
 
-        self.modify_button = Button(self.form_options, width=16, text="Ajouter Emprunt", bg=bgColor, fg=prColor,
+        self.modify_button = Button(self.form_options, width=16, text="Return", bg=bgColor, fg=prColor,
                                     relief="solid",
                                     font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                     activeforeground=bgColor,
@@ -331,7 +338,7 @@ class RetourneEmprunt():
 
     def retourne_livre(self):
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
-            messagebox.showinfo("Erreur", "Vous devez sélectionner toutes les entrées.")
+            messagebox.showinfo("Error", "Please select all fields.")
             return
         livre_id = self.livre_combobox.get().split('-')[0].strip()
         adherent_id = self.adherent_combobox.get().split('-')[0].strip()
@@ -343,13 +350,13 @@ class RetourneEmprunt():
         if cursor.rowcount == 0:
             cursor.close()
             connection.close()
-            messagebox.showerror("Erreur", "Aucun emprunt actif trouvé pour cet adherent et ce livre.")
+            messagebox.showerror("Error", "No active loan found for this member and book.")
             return
         cursor.execute("UPDATE livre SET disponible='oui' WHERE idLiv=?", (livre_id,))
         connection.commit()
         cursor.close()
         connection.close()
-        messagebox.showinfo("Success", "Le livre a été retourné avec succès.")
+        messagebox.showinfo("Success", "Book returned successfully.")
         clearPage(self.root)
         AfficherEmprunts(self.root)
 

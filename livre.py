@@ -11,53 +11,53 @@ prColor = "#12192c"
 prLightColor = "#c4fff3"
 textHolderColor = "#7a7e89"
 
-# validation fonction
+# validation function
 def valider_donnees(titre, pages, prix, auteur):
-    # Vérifier que le titre contient au moins 2 caractères alphanumériques
+    # Title must contain at least 2 characters
     if len(titre) < 2:
         if len(titre) == 0:
-            messagebox.showerror("Erreur", "Le titre est obligatoire.")
+            messagebox.showerror("Error", "Title is required.")
         else:
-            messagebox.showerror("Erreur", "Le titre doit contenir au moins 2 caractères.")
+            messagebox.showerror("Error", "Title must contain at least 2 characters.")
         return False
 
-    # Vérifier que l'auteur contient au moins 2 caractères alphabétiques
+    # Author must contain at least 2 alphabetic characters
     if not re.match(r'^[a-zA-Z\s]{2,}$', auteur):
         if len(auteur) == 0:
-            messagebox.showerror("Erreur", "Le nom de l'auteur est obligatoire.")
+            messagebox.showerror("Error", "Author name is required.")
         else:
-            messagebox.showerror("Erreur", "Le nom de l'auteur doit contenir au moins 2 caractères alphabétiques.")
+            messagebox.showerror("Error", "Author name must contain at least 2 alphabetic characters.")
         return False
 
-    # Vérifier que les pages sont un entier positif
+    # Pages must be a positive integer
     try:
         pages_int = int(pages)
         if pages_int <= 0:
             raise ValueError
     except ValueError:
         if len(pages) == 0:
-            messagebox.showerror("Erreur", "Le nombre de pages est obligatoire.")
+            messagebox.showerror("Error", "Number of pages is required.")
         else:
-            messagebox.showerror("Erreur", "Le nombre de pages doit être un entier positif.")
+            messagebox.showerror("Error", "Number of pages must be a positive integer.")
         return False
 
-    # Vérifier que le prix est un flottant positif
+    # Prix must be a positive float
     try:
         prix_float = float(prix)
         if prix_float <= 0:
             raise ValueError
     except ValueError:
         if len(prix) == 0:
-            messagebox.showerror("Erreur", "Le prix est obligatoire.")
+            messagebox.showerror("Error", "Price is required.")
         else:
-            messagebox.showerror("Erreur", "Le prix doit être un nombre flottant positif.")
+            messagebox.showerror("Error", "Price must be a positive number.")
         return False
 
 
 
     return True
 
-# fonction pour supprimer le contenu de la page
+# clear the current page content
 def clearPage(root):
     for widget in root.winfo_children():
         if isinstance(widget, Frame):
@@ -68,7 +68,7 @@ class AfficherLivres():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Afficher Livres")
+        self.root.title("Library - Books")
 
         # content frame
         self.contentframe = Frame(self.root, bg=bgColor, padx=50, pady=50)
@@ -100,7 +100,7 @@ class AfficherLivres():
         cursor = connection.cursor()
         cursor.execute("Select * from livre")
         data = cursor.fetchall()
-        columns = ('ID', 'Titre', 'Auteur', 'Pages', 'Prix', 'Disponible')
+        columns = ('ID', 'Title', 'Author', 'Pages', 'Price', 'Available')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
         self.tree.tag_configure("oddrow", background="lightblue")
 
@@ -114,20 +114,20 @@ class AfficherLivres():
         self.tree.heading('ID', text='ID')
         self.tree.column('ID', width=20)
 
-        self.tree.heading('Titre', text='Titre')
-        self.tree.column('Titre', width=200)
+        self.tree.heading('Title', text='Title')
+        self.tree.column('Title', width=200)
 
-        self.tree.heading('Auteur', text='Auteur')
-        self.tree.column('Auteur', width=80)
+        self.tree.heading('Author', text='Author')
+        self.tree.column('Author', width=80)
 
         self.tree.heading('Pages', text='Pages')
         self.tree.column('Pages', width=80)
 
-        self.tree.heading('Prix', text='Prix')
-        self.tree.column('Prix', width=50)
+        self.tree.heading('Price', text='Price')
+        self.tree.column('Price', width=50)
 
-        self.tree.heading('Disponible', text='Disponible')
-        self.tree.column('Disponible', width=100)
+        self.tree.heading('Available', text='Available')
+        self.tree.column('Available', width=100)
 
         for col in columns:
             self.tree.heading(col, text=col, command=lambda _col=col: self.trierColumn(self.tree, _col, False))
@@ -198,7 +198,7 @@ class AjouterLivre():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Ajouter Livre")
+        self.root.title("Library - Add Book")
 
         # content frame
         self.contentframe = Frame(self.root, bg=bgColor)
@@ -217,19 +217,19 @@ class AjouterLivre():
         self.form_options.pack( padx=10, pady=10)
 
         # title
-        self.title = Label(self.form_options, text="Ajouter livre", fg=prColor, font=('Rubik', 23), bg=bgColor)
+        self.title = Label(self.form_options, text="Add Book", fg=prColor, font=('Rubik', 23), bg=bgColor)
         self.title.grid(row=0, column=0, columnspan=3, rowspan=2,padx=10, pady=10, sticky="e")
 
 
         # titre entry
-        title_label = Label(self.form_options, text="Titre:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        title_label = Label(self.form_options, text="Title:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         title_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
         self.titre_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                  highlightcolor="black", relief="solid")
         self.titre_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
         # auteur entry
-        auteur_label = Label(self.form_options, text="Auteur:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        auteur_label = Label(self.form_options, text="Author:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         auteur_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
         self.auteur_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                   highlightcolor="black", relief="solid")
@@ -243,7 +243,7 @@ class AjouterLivre():
         self.pages_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
         # prix entry
-        prix_label = Label(self.form_options, text="Prix:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        prix_label = Label(self.form_options, text="Price:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         prix_label.grid(row=6, column=0, padx=10, pady=10, sticky="e")
         self.prix_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                 highlightcolor="black", relief="solid")
@@ -258,7 +258,7 @@ class AjouterLivre():
         #                                   cursor="hand2")
         #self.disponible_check.grid(row=7, column=1, padx=10, pady=10)
 
-        self.modify_button = Button(self.form_options, width=16, text="Ajouter Livre", bg=bgColor, fg=prColor,
+        self.modify_button = Button(self.form_options, width=16, text="Add Book", bg=bgColor, fg=prColor,
                                     relief="solid",
                                     font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                     activeforeground=bgColor,
@@ -278,7 +278,7 @@ class AjouterLivre():
             cursor.execute("INSERT INTO Livre (titre,  nomauteur, pages, prix, disponible) VALUES (?, ?, ?, ?, ?)",
                            (titre, auteur, pages, prix, "oui"))
             connection.commit()
-            messagebox.showinfo("Success", "le livre a été ajouté avec succés")
+            messagebox.showinfo("Success", "Book added successfully.")
             clearPage(self.root)
             AfficherLivres(self.root)
 
@@ -287,7 +287,7 @@ class ModifierLivre():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Modifier Livre")
+        self.root.title("Library - Edit Book")
 
         # style
 
@@ -316,7 +316,7 @@ class ModifierLivre():
 
 
 
-        self.tree = ttk.Treeview(self.contentframe, columns = ('ID', 'Titre', 'Auteur', 'Pages', 'Prix', 'Disponible'),
+        self.tree = ttk.Treeview(self.contentframe, columns = ('ID', 'Title', 'Author', 'Pages', 'Price', 'Available'),
                                  show="headings", style="Custom.Treeview")
 
         # Create a scrollbar
@@ -332,20 +332,20 @@ class ModifierLivre():
         self.tree.heading('ID', text='ID')
         self.tree.column('ID', width=20)
 
-        self.tree.heading('Titre', text='Titre')
-        self.tree.column('Titre', width=200)
+        self.tree.heading('Title', text='Title')
+        self.tree.column('Title', width=200)
 
-        self.tree.heading('Auteur', text='Auteur')
-        self.tree.column('Auteur', width=80)
+        self.tree.heading('Author', text='Author')
+        self.tree.column('Author', width=80)
 
         self.tree.heading('Pages', text='Pages')
         self.tree.column('Pages', width=80)
 
-        self.tree.heading('Prix', text='Prix')
-        self.tree.column('Prix', width=50)
+        self.tree.heading('Price', text='Price')
+        self.tree.column('Price', width=50)
 
-        self.tree.heading('Disponible', text='Disponible')
-        self.tree.column('Disponible', width=100)
+        self.tree.heading('Available', text='Available')
+        self.tree.column('Available', width=100)
 
         self.tree.bind("<<TreeviewSelect>>", self.selecterCol)
         self.tree.tag_configure("oddrow", background="lightblue")
@@ -355,14 +355,14 @@ class ModifierLivre():
         self.form_options.pack(fill="x", padx=10, pady=10)
 
         # titre entry
-        title_label = Label(self.form_options, text="Titre:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        title_label = Label(self.form_options, text="Title:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         title_label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
         self.titre_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                  highlightcolor="black", relief="solid")
         self.titre_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
         #auteur entry
-        auteur_label = Label(self.form_options, text="Auteur:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        auteur_label = Label(self.form_options, text="Author:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         auteur_label.grid(row=0, column=2, padx=10, pady=10, sticky="e")
         self.auteur_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                  highlightcolor="black", relief="solid")
@@ -376,7 +376,7 @@ class ModifierLivre():
         self.pages_entry.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
         # prix entry
-        prix_label = Label(self.form_options, text="Prix:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        prix_label = Label(self.form_options, text="Price:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         prix_label.grid(row=1, column=2, padx=10, pady=10, sticky="e")
         self.prix_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                  highlightcolor="black", relief="solid")
@@ -384,12 +384,12 @@ class ModifierLivre():
 
 
 
-        self.modify_button = Button(self.form_options, width=16, text="Modifier Livre", bg=bgColor, fg=prColor, relief="solid",
+        self.modify_button = Button(self.form_options, width=16, text="Edit Book", bg=bgColor, fg=prColor, relief="solid",
                                font=('Rubik', 12), cursor="hand2", activebackground=prColor, activeforeground=bgColor,
                                pady=5, command=self.modifier_livre)
         self.modify_button.grid(row=0, column=4, columnspan=2, padx=10, pady=10)
 
-        self.supprimer_button = Button(self.form_options, width=16, text="Supprimer Livre", bg="#e74c3c", fg=prColor, relief="solid",
+        self.supprimer_button = Button(self.form_options, width=16, text="Delete Book", bg="#e74c3c", fg=prColor, relief="solid",
                                font=('Rubik', 12), cursor="hand2", activebackground=prColor, activeforeground=bgColor,
                                pady=5, command=self.supprimer_livre)
         self.supprimer_button.grid(row=1, column=4, columnspan=2, padx=10, pady=10)
@@ -409,7 +409,7 @@ class ModifierLivre():
 
     def modifier_livre(self):
         if not self.tree.selection() :
-            tkinter.messagebox.showwarning("invalid choix","veuillez selectionner une livre!")
+            tkinter.messagebox.showwarning("Invalid choice","Please select a book!")
             return
         titre = self.titre_entry.get().strip()
         pages = self.pages_entry.get().strip()
@@ -421,7 +421,7 @@ class ModifierLivre():
             cursor.execute("UPDATE Livre SET titre=?, pages=?, nomauteur=?, prix=? WHERE idLiv=?",
                            (titre, pages, auteur, prix, self.selected_book_id))
             connection.commit()
-            messagebox.showinfo("Success", "le livre a été modifier avec succés")
+            messagebox.showinfo("Success", "Book updated successfully.")
             self.afficherInfo()
             self.titre_entry.delete(0, END)
             self.auteur_entry.delete(0, END)
@@ -430,28 +430,28 @@ class ModifierLivre():
 
     def supprimer_livre(self):
         if not self.tree.selection() :
-            tkinter.messagebox.showwarning("invalid choix","veuillez selectionner une livre!")
+            tkinter.messagebox.showwarning("Invalid choice","Please select a book!")
             return
         selected_item = self.tree.selection()
         if selected_item:
-            response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette livre?")
+            response = messagebox.askyesno("Confirm", "Are you sure you want to delete this book?")
             if response:
                 connection = connect()
                 cursor = connection.cursor()
                 try:
                     cursor.execute("DELETE FROM Livre WHERE idLiv=?", (self.selected_book_id,))
                     connection.commit()
-                    messagebox.showinfo("Success", "Le livre a été supprimé avec succé")
+                    messagebox.showinfo("Success", "Book deleted successfully.")
                     self.afficherInfo()
                     self.titre_entry.delete(0, END)
                     self.auteur_entry.delete(0, END)
                     self.pages_entry.delete(0, END)
                     self.prix_entry.delete(0, END)
                 except sqlite3.IntegrityError:
-                    messagebox.showerror("Erreur",
-                                         "vous ne pouvez pas supprimer cet livre, cet livre a déja un emprunt")
+                    messagebox.showerror("Error",
+                                         "You cannot delete this book, it already has a loan.")
                 except sqlite3.Error as e:
-                    messagebox.showerror("Erreur", f"Erreur lors de la suppression du livre : {e}")
+                    messagebox.showerror("Error", f"Error while deleting the book: {e}")
                 finally:
                     cursor.close()
                     connection.close()

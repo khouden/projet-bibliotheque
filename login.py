@@ -12,7 +12,7 @@ textHolderColor = "#7a7e89"
 class Login:
     def __init__(self, root):
         self.root = root
-        self.root.title("Bibliothèque - Login")
+        self.root.title("Library - Login")
         self.root.geometry('925x600')
         self.root.configure(background=bgColor)
         self.root.resizable(False, False)
@@ -40,29 +40,30 @@ class Login:
         # mot de passe
         self.password = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor)
         self.password.place(relx=0.5, rely=0.45, anchor="center")
-        self.password.insert(0, "mot de passe")
+        self.password.insert(0, "password")
         self.password.bind('<FocusIn>', self.on_enterp)
         self.password.bind('<FocusOut>', self.on_leavep)
+        self.password.bind('<Return>', self.on_return)
 
         self.underline = Frame(self.frame, width=255, height=2, bg=prColor)
         self.underline.place(relx=0.5, rely=0.5, anchor="center")
 
         # login button
-        self.loginButton = Button(self.frame, width=29, pady=5, text="connexion", bg=prColor, fg="white", relief="solid",
+        self.loginButton = Button(self.frame, width=29, pady=5, text="Login", bg=prColor, fg="white", relief="solid",
                                   activebackground=bgColor, activeforeground=prColor, font=('Rubik', 11), cursor="hand2",
                                   command=self.login)
         self.loginButton.place(relx=0.5, rely=0.7, anchor="center")
 
-        # creation
-        self.labelCreator = Label(self.contentframe, text="Crée par : Abdellah khouden et Abderrahim bensaid",
+        # credits
+        self.labelCreator = Label(self.contentframe, text="Created by: Abdellah Khouden & Abderrahim Bensaid",
                                   font=('Rubik', 11), bg=bgColor)
         self.labelCreator.place(x=50, y=490)
-        self.labelCreator = Label(self.contentframe, text="et Othman Elhyane",
+        self.labelCreator = Label(self.contentframe, text="and Othman Elhyane",
                                   font=('Rubik', 11), bg=bgColor)
         self.labelCreator.place(x=120, y=520)
 
-        # encadre
-        self.labelEncadre = Label(self.contentframe, text="Encadré par : Mr.Abdellah sair",
+        # supervisor
+        self.labelEncadre = Label(self.contentframe, text="Supervised by: Mr. Abdellah Sair",
                                   font=('Rubik', 11), bg=bgColor)
         self.labelEncadre.place(x=530, y=490)
 
@@ -74,7 +75,10 @@ class Login:
         name = self.password.get()
         if name == '':
             self.password.config(show="")
-            self.password.insert(0, 'mot de passe')
+            self.password.insert(0, 'password')
+
+    def on_return(self, e):
+        self.login()
 
     def login(self):
         password = self.password.get()
@@ -89,13 +93,13 @@ class Login:
             self.contentframe.pack_forget()
             MainMenu(self.root)
         else:
-            messagebox.showerror("Invalid informations", "le mot de passe est incorrecte")
+            messagebox.showerror("Error", "Incorrect password.")
 
 
 class FirstSetup:
     def __init__(self, root):
         self.root = root
-        self.root.title("Bibliothèque - Première utilisation")
+        self.root.title("Library - First Use")
         self.root.geometry('925x600')
         self.root.configure(background=bgColor)
         self.root.resizable(False, False)
@@ -111,19 +115,20 @@ class FirstSetup:
         self.frame.place(x=450, y=30)
 
         # title
-        self.title = Label(self.frame, text="Première utilisation", fg=prColor, font=('Rubik', 20), bg=bgColor)
+        self.title = Label(self.frame, text="First use", fg=prColor, font=('Rubik', 20), bg=bgColor)
         self.title.place(relx=0.5, rely=0.1, anchor="center")
 
-        self.subtitle = Label(self.frame, text="Définissez votre mot de passe :", fg=prColor,
+        self.subtitle = Label(self.frame, text="Set your password:", fg=prColor,
                               font=('Rubik', 12), bg=bgColor)
         self.subtitle.place(relx=0.5, rely=0.25, anchor="center")
 
         # mot de passe
         self.password = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor, show="*")
         self.password.place(relx=0.5, rely=0.42, anchor="center")
-        self.password.insert(0, "mot de passe")
+        self.password.insert(0, "password")
         self.password.bind('<FocusIn>', self.on_enterp)
         self.password.bind('<FocusOut>', self.on_leavep)
+        self.password.bind('<Return>', self.on_next_field)
 
         self.underline = Frame(self.frame, width=255, height=2, bg=prColor)
         self.underline.place(relx=0.5, rely=0.47, anchor="center")
@@ -131,15 +136,16 @@ class FirstSetup:
         # confirmation
         self.confirm = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor, show="*")
         self.confirm.place(relx=0.5, rely=0.58, anchor="center")
-        self.confirm.insert(0, "confirmer le mot de passe")
+        self.confirm.insert(0, "confirm password")
         self.confirm.bind('<FocusIn>', self.on_enterc)
         self.confirm.bind('<FocusOut>', self.on_leavec)
+        self.confirm.bind('<Return>', self.on_submit)
 
         self.underline2 = Frame(self.frame, width=255, height=2, bg=prColor)
         self.underline2.place(relx=0.5, rely=0.63, anchor="center")
 
         # button
-        self.setupButton = Button(self.frame, width=29, pady=5, text="Définir le mot de passe", bg=prColor, fg="white",
+        self.setupButton = Button(self.frame, width=29, pady=5, text="Set password", bg=prColor, fg="white",
                                   relief="solid", activebackground=bgColor, activeforeground=prColor,
                                   font=('Rubik', 11), cursor="hand2", command=self.define_password)
         self.setupButton.place(relx=0.5, rely=0.8, anchor="center")
@@ -149,28 +155,34 @@ class FirstSetup:
 
     def on_leavep(self, e):
         if self.password.get() == '':
-            self.password.insert(0, 'mot de passe')
+            self.password.insert(0, 'password')
 
     def on_enterc(self, e):
         self.confirm.delete(0, 'end')
 
+    def on_next_field(self, e):
+        self.confirm.focus_set()
+
+    def on_submit(self, e):
+        self.define_password()
+
     def on_leavec(self, e):
         if self.confirm.get() == '':
-            self.confirm.insert(0, 'confirmer le mot de passe')
+            self.confirm.insert(0, 'confirm password')
 
     def define_password(self):
         password = self.password.get().strip()
         confirm = self.confirm.get().strip()
-        if password in ("mot de passe", ""):
-            messagebox.showerror("Erreur", "Le mot de passe est obligatoire.")
+        if password in ("password", ""):
+            messagebox.showerror("Error", "Password is required.")
             return
         if len(password) < 4:
-            messagebox.showerror("Erreur", "Le mot de passe doit contenir au moins 4 caractères.")
+            messagebox.showerror("Error", "Password must be at least 4 characters long.")
             return
-        if confirm in ("confirmer le mot de passe", "") or password != confirm:
-            messagebox.showerror("Erreur", "Les mots de passe ne correspondent pas.")
+        if confirm in ("confirm password", "") or password != confirm:
+            messagebox.showerror("Error", "Passwords do not match.")
             return
         set_password(password)
-        messagebox.showinfo("Success", "Votre mot de passe a été défini avec succès.")
+        messagebox.showinfo("Success", "Your password has been set successfully.")
         self.contentframe.pack_forget()
         MainMenu(self.root)

@@ -12,32 +12,32 @@ prLightColor = "#c4fff3"
 textHolderColor = "#7a7e89"
 
 
-# validation fonction
+# validation function
 def valider_donnees(nom, tel, email):
-    # Vérification du nom (au moins 2 lettres alphabétiques)
+    # Name must contain at least 2 alphabetic characters
     if not re.match(r'^[a-zA-Z\s]{2,}$', nom):
         if len(nom) == 0:
-            messagebox.showerror("Erreur", "Le nom est obligatoire.")
+            messagebox.showerror("Error", "Name is required.")
         else:
-            messagebox.showerror("Erreur", "Le nom doit contenir au moins 2 lettres alphabétiques.")
+            messagebox.showerror("Error", "Name must contain at least 2 alphabetic characters.")
         return False
 
-    # Vérification du téléphone (optionnel, format international)
+    # Phone is optional; international format when provided
     if tel:
         if not re.match(r'^\+?[\d\s\-\(\)\.]+$', tel.strip()):
-            messagebox.showerror("Erreur", "Le numéro de téléphone contient des caractères invalides.")
+            messagebox.showerror("Error", "Phone number contains invalid characters.")
             return False
         chiffres = re.sub(r'\D', '', tel)
         if not 7 <= len(chiffres) <= 15:
-            messagebox.showerror("Erreur", "Le numéro de téléphone doit contenir entre 7 et 15 chiffres.")
+            messagebox.showerror("Error", "Phone number must contain between 7 and 15 digits.")
             return False
 
-    # Vérification de l'email (format email)
+    # Email must be a valid address
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
         if len(email) == 0:
-            messagebox.showerror("Erreur", "L'email est obligatoire.")
+            messagebox.showerror("Error", "Email is required.")
         else:
-            messagebox.showerror("Erreur", "L'email doit être valide.")
+            messagebox.showerror("Error", "Email must be valid.")
         return False
 
     return True
@@ -53,7 +53,7 @@ class AfficherAdherents():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Afficher les Adherents")
+        self.root.title("Library - Members")
 
         # content frame
         self.contentframe = Frame(self.root, bg=bgColor, padx=50, pady=50)
@@ -85,7 +85,7 @@ class AfficherAdherents():
         cursor = connection.cursor()
         cursor.execute(f"Select * from adherent")
         data = cursor.fetchall()
-        columns = ('ID', 'Nom', 'Telephone', 'Email')
+        columns = ('ID', 'Name', 'Phone', 'Email')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
         self.tree.tag_configure("oddrow", background="lightblue")
 
@@ -163,7 +163,7 @@ class AjouterAdherent():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Ajouter Adherent")
+        self.root.title("Library - Add Member")
 
         # content frame
         self.contentframe = Frame(self.root, bg=bgColor)
@@ -182,18 +182,18 @@ class AjouterAdherent():
         self.form_options.pack(padx=10, pady=10)
 
         # title
-        self.title = Label(self.form_options, text="Ajouter adherent", fg=prColor, font=('Rubik', 23), bg=bgColor)
+        self.title = Label(self.form_options, text="Add member", fg=prColor, font=('Rubik', 23), bg=bgColor)
         self.title.grid(row=0, column=0, columnspan=3, rowspan=2, padx=10, pady=10, sticky="e")
 
         # nom entry
-        self.nom_label = Label(self.form_options, text="Nom:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.nom_label = Label(self.form_options, text="Name:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.nom_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
         self.nom_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
         self.nom_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
         # telephone entry
-        self.tel_label = Label(self.form_options, text="Telephone (optionnel):", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.tel_label = Label(self.form_options, text="Phone (optional):", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.tel_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
         self.tel_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
@@ -206,7 +206,7 @@ class AjouterAdherent():
                                  highlightcolor="black", relief="solid")
         self.email_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
-        self.modify_button = Button(self.form_options, width=16, text="Ajouter Adherent", bg=bgColor, fg=prColor,
+        self.modify_button = Button(self.form_options, width=16, text="Add Member", bg=bgColor, fg=prColor,
                                     relief="solid",
                                     font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                     activeforeground=bgColor,
@@ -224,7 +224,7 @@ class AjouterAdherent():
             cursor.execute("INSERT INTO Adherent (nom,  tel, email) VALUES (?, ?, ?)",
                            (nom, tel, email))
             connection.commit()
-            messagebox.showinfo("Success", "l'adherent a été ajouté avec succés")
+            messagebox.showinfo("Success", "Member added successfully.")
             clearPage(self.root)
             AfficherAdherents(self.root)
 
@@ -233,7 +233,7 @@ class ModifierAdherent():
     def __init__(self, root):
         self.root = root
         self.root.config(bg=bgColor)
-        self.root.title("Bibliothèque - Modifier Adherent")
+        self.root.title("Library - Edit Member")
 
         # style
 
@@ -258,7 +258,7 @@ class ModifierAdherent():
         self.contentframe = Frame(self.root, bg=bgColor, padx=50, pady=50)
         self.contentframe.pack(expand=True, fill="both")
 
-        self.tree = ttk.Treeview(self.contentframe, columns=('ID', 'Nom', 'Telephone', 'Email'),
+        self.tree = ttk.Treeview(self.contentframe, columns=('ID', 'Name', 'Phone', 'Email'),
                                  show="headings", style="Custom.Treeview")
 
         # Create a scrollbar
@@ -279,14 +279,14 @@ class ModifierAdherent():
         self.form_options.pack(fill="x", padx=10, pady=10)
 
         # nom adherent entry
-        self.nom_label = Label(self.form_options, text="Nom:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.nom_label = Label(self.form_options, text="Name:", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.nom_label.grid(row=0, column=0, padx=10, pady=10, sticky="e")
         self.nom_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
         self.nom_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
         # telephone entry
-        self.tel_label = Label(self.form_options, text="Telephone (optionnel):", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.tel_label = Label(self.form_options, text="Phone (optional):", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.tel_label.grid(row=0, column=2, padx=10, pady=10, sticky="e")
         self.tel_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
@@ -299,14 +299,14 @@ class ModifierAdherent():
                                  highlightcolor="black", relief="solid")
         self.email_entry.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
-        self.modify_button = Button(self.form_options, width=17, text="Modifier Adherent", bg=bgColor, fg=prColor,
+        self.modify_button = Button(self.form_options, width=17, text="Edit Member", bg=bgColor, fg=prColor,
                                     relief="solid",
                                     font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                     activeforeground=bgColor,
                                     pady=5, command=self.modifier_adherent)
         self.modify_button.grid(row=0, column=4, columnspan=2, padx=10, pady=10)
 
-        self.supprimer_button = Button(self.form_options, width=17, text="Supprimer Adherent", bg="#e74c3c", fg=prColor,
+        self.supprimer_button = Button(self.form_options, width=17, text="Delete Member", bg="#e74c3c", fg=prColor,
                                        relief="solid",
                                        font=('Rubik', 12), cursor="hand2", activebackground=prColor,
                                        activeforeground=bgColor,
@@ -328,7 +328,7 @@ class ModifierAdherent():
 
     def modifier_adherent(self):
         if not self.tree.selection():
-            tkinter.messagebox.showwarning("invalid choix", "veuillez selectionner une Adherent!")
+            tkinter.messagebox.showwarning("Invalid choice", "Please select a member!")
             return
         nom = self.nom_entry.get().strip()
         tel = self.tel_entry.get().strip()
@@ -339,7 +339,7 @@ class ModifierAdherent():
             cursor.execute("UPDATE adherent SET nom=?, tel=?, email=? WHERE idAdh=?",
                            (nom, tel, email, self.selected_adherent_id))
             connection.commit()
-            messagebox.showinfo("Success", "l'adherent a été modifier avec succés")
+            messagebox.showinfo("Success", "Member updated successfully.")
             self.afficherInfo()
             clearPage(self.root)
             self.nom_entry.delete(0, END)
@@ -349,27 +349,27 @@ class ModifierAdherent():
 
     def supprimer_adherent(self):
         if not self.tree.selection():
-            tkinter.messagebox.showwarning("invalid choix", "veuillez selectionner une adherent!")
+            tkinter.messagebox.showwarning("Invalid choice", "Please select a member!")
             return
         selected_item = self.tree.selection()
         if selected_item:
-            response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette adherent?")
+            response = messagebox.askyesno("Confirm", "Are you sure you want to delete this member?")
             if response:
                 connection = connect()
                 cursor = connection.cursor()
                 try:
                     cursor.execute("DELETE FROM Adherent WHERE idAdh=?", (self.selected_adherent_id,))
                     connection.commit()
-                    messagebox.showinfo("Success", "Adherent a été supprimé avec succée")
+                    messagebox.showinfo("Success", "Member deleted successfully.")
                     self.afficherInfo()
                     self.nom_entry.delete(0, END)
                     self.tel_entry.delete(0, END)
                     self.email_entry.delete(0, END)
                 except sqlite3.IntegrityError:
-                    messagebox.showerror("Erreur",
-                                         "vous ne pouvez pas supprimer cet adherent, cet adherent a déja un emprunt")
+                    messagebox.showerror("Error",
+                                         "You cannot delete this member, they already have a loan.")
                 except sqlite3.Error as e:
-                    messagebox.showerror("Erreur", f"Erreur lors de la suppression de l'adherent : {e}")
+                    messagebox.showerror("Error", f"Error while deleting the member: {e}")
                 finally:
                     cursor.close()
                     connection.close()

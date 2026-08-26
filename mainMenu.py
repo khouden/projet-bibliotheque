@@ -29,7 +29,7 @@ class MainMenu:
 
     def home(self):
         clearPage(self.root)
-        self.root.title("Bibliothèque - Main")
+        self.root.title("Library - Home")
         self.contentframe = Frame(self.root, bg=bgColor)
         self.contentframe.pack(expand=True, fill="both")
         self.bg_image = PhotoImage(file=asset_path("background.png"))
@@ -37,22 +37,22 @@ class MainMenu:
         self.background_label = Label(self.contentframe, image=self.bg_image)
         self.background_label.pack()
 
-        # livres combobox
+        # books combobox
         self.livre_combobox = ttk.Combobox(self.contentframe, font=('Rubik', 12), state="readonly", width=18)
         self.livre_combobox.place(x= 120, y = 430)
-        self.livre_combobox["values"]= ['afficher livres', 'ajouter un livre', 'modifier livres']
+        self.livre_combobox["values"]= ['list books', 'add book', 'edit books']
         self.livre_combobox.bind("<<ComboboxSelected>>", self.choisir_livre)
 
-        # adherents combobox
+        # members combobox
         self.adherent_combobox = ttk.Combobox(self.contentframe, font=('Rubik', 12), state="readonly", width=18)
         self.adherent_combobox.place(x=363, y=430)
-        self.adherent_combobox["values"]= ['afficher adherents', 'ajouter adherent', 'modifier adherent']
+        self.adherent_combobox["values"]= ['list members', 'add member', 'edit member']
         self.adherent_combobox.bind("<<ComboboxSelected>>", self.choisir_adherent)
 
-        # emprunts combobox
+        # loans combobox
         self.emprunt_combobox = ttk.Combobox(self.contentframe, font=('Rubik', 12), state="readonly", width=18)
         self.emprunt_combobox.place(x=606, y=430)
-        self.emprunt_combobox["values"] = ['afficher emprunts', 'prendre un livre', 'retourner un livre']
+        self.emprunt_combobox["values"] = ['list loans', 'borrow a book', 'return a book']
         self.emprunt_combobox.bind("<<ComboboxSelected>>", self.choisir_emprunt)
 
     def create_menus(self):
@@ -62,40 +62,40 @@ class MainMenu:
         self.options_menu = Menu(self.menu, tearoff=0, bg=prColor, fg="white", activebackground=bgColor,
                                  activeforeground="white", font=('Rubik', 12))
 
-        self.menu.add_cascade(label="options", menu=self.options_menu)
-        self.options_menu.add_command(label="Acceuil", command=self.home)
+        self.menu.add_cascade(label="Options", menu=self.options_menu)
+        self.options_menu.add_command(label="Home", command=self.home)
         self.options_menu.add_separator()
-        self.options_menu.add_command(label="Quitter", command=self.quitter)
+        self.options_menu.add_command(label="Quit", command=self.quitter)
 
         self.livre_menu = Menu(self.menu, tearoff=0, bg=prColor, fg="white", activebackground=bgColor,
                                activeforeground="white", font=('Rubik', 12))
 
-        self.menu.add_cascade(label="Livre", menu=self.livre_menu)
-        self.livre_menu.add_command(label="Lister livres", command=self.lister_livres)
-        self.livre_menu.add_command(label="Ajouter livre", command=self.ajouter_livres)
-        self.livre_menu.add_command(label="Modifier livre", command=self.modifier_livres)
+        self.menu.add_cascade(label="Books", menu=self.livre_menu)
+        self.livre_menu.add_command(label="List books", command=self.lister_livres)
+        self.livre_menu.add_command(label="Add book", command=self.ajouter_livres)
+        self.livre_menu.add_command(label="Edit book", command=self.modifier_livres)
         # self.livre_menu.add_command(label="Supprimer livre", command=self.modifier_livres)
 
         self.adherent_menu = Menu(self.menu, tearoff=0, bg=prColor, fg="white", activebackground=bgColor,
                                   activeforeground="white", font=('Rubik', 12))
-        self.menu.add_cascade(label="Adherent", menu=self.adherent_menu)
-        self.adherent_menu.add_command(label="Lister adherents", command=self.lister_adherent)
-        self.adherent_menu.add_command(label="Ajouter adherent", command=self.ajouter_adherent)
-        self.adherent_menu.add_command(label="Modifier adherent", command=self.modifier_adherent)
+        self.menu.add_cascade(label="Members", menu=self.adherent_menu)
+        self.adherent_menu.add_command(label="List members", command=self.lister_adherent)
+        self.adherent_menu.add_command(label="Add member", command=self.ajouter_adherent)
+        self.adherent_menu.add_command(label="Edit member", command=self.modifier_adherent)
         self.emprunt_menu = Menu(self.menu, tearoff=0, bg=prColor, fg="white", activebackground=bgColor,
                                  activeforeground="white", font=('Rubik', 12))
 
-        self.menu.add_cascade(label="Emprunt", menu=self.emprunt_menu)
-        self.emprunt_menu.add_command(label="Lister emprunts", command=self.lister_emprunt)
+        self.menu.add_cascade(label="Loans", menu=self.emprunt_menu)
+        self.emprunt_menu.add_command(label="List loans", command=self.lister_emprunt)
 
-        # prendre livre
+        # new loan submenu
         self.prendre_menu = Menu(self.emprunt_menu, tearoff=0, bg=prColor, fg="white", activebackground=bgColor,
                                  activeforeground="white", font=('Rubik', 12))
-        self.emprunt_menu.add_cascade(label="Ajouter emprunt", menu=self.prendre_menu)
+        self.emprunt_menu.add_cascade(label="New loan", menu=self.prendre_menu)
 
-        self.prendre_menu.add_command(label="Prendre un livre", command=self.prendre_emprunt)
+        self.prendre_menu.add_command(label="Borrow a book", command=self.prendre_emprunt)
 
-        self.prendre_menu.add_command(label="Retourner un livre", command=self.retourner_emprunt)
+        self.prendre_menu.add_command(label="Return a book", command=self.retourner_emprunt)
 
         # emprunt_menu.add_command(label="Modifier", command=lambda: EmpruntManagement(self.root, self.app).modify_emprunt())
 
@@ -111,35 +111,35 @@ class MainMenu:
     # options
 
     def quitter(self):
-        if tkinter.messagebox.askyesno("Quitter", "Voulez vous quitter ?"):
+        if tkinter.messagebox.askyesno("Quit", "Do you want to quit?"):
             exit()
 
 
 
-    # choisir une choix
+    # combobox navigation
     def choisir_livre(self, event):
         match self.livre_combobox.get():
-            case "afficher livres":
+            case "list books":
                 self.lister_livres()
-            case "ajouter un livre":
+            case "add book":
                 self.ajouter_livres()
-            case "modifier livres":
+            case "edit books":
                 self.modifier_livres()
     def choisir_adherent(self, event):
         match self.adherent_combobox.get():
-            case "afficher adherents":
+            case "list members":
                 self.lister_adherent()
-            case "ajouter adherent":
+            case "add member":
                 self.ajouter_adherent()
-            case "modifier adherent":
+            case "edit member":
                 self.modifier_adherent()
     def choisir_emprunt(self, event):
         match self.emprunt_combobox.get():
-            case "afficher emprunts":
+            case "list loans":
                 self.lister_emprunt()
-            case "prendre un livre":
+            case "borrow a book":
                 self.prendre_emprunt()
-            case "retourner un livre":
+            case "return a book":
                 self.retourner_emprunt()
     # livre
     def lister_livres(self):

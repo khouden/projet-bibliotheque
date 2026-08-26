@@ -1,29 +1,31 @@
 # TODO — Make projet-bibliotheque a shippable Windows app
 
-Decisions made: **migrate MySQL -> SQLite**, **delete modifier_emprunt**.
+Decisions made: **migrated MySQL -> SQLite**, **modifier_emprunt deleted**.
 
-## High priority — crash bugs & migration
+## High priority — crash bugs & migration  ✅ DONE
 
-- [ ] Fix `livre.py` AttributeError: remove `self.disponible_var` references (~lines 414, 470)
-- [ ] Delete `modifier_emprunt()` from `mainMenu.py`
-- [ ] Create `db.py`: sqlite3 connection helper + first-run schema bootstrap (tables + seeded login row)
-- [ ] Migrate `login/livre/adherent/emprunt/mainMenu` from `mysql.connector` to `sqlite3`
-  - `%s` placeholders -> `?`
-  - `CONCAT_WS('', cols) LIKE` -> `cols joined with || LIKE`
-  - `AUTO_INCREMENT` -> `INTEGER PRIMARY KEY AUTOINCREMENT`
-- [ ] Verify full flow after fixes: `python main.py`, exercise login/livre/adherent/emprunt pages
+- [x] Fix `livre.py` AttributeError: remove `self.disponible_var` references
+- [x] Delete `modifier_emprunt()` from `mainMenu.py`
+- [x] Create `db.py`: sqlite3 connection helper + first-run schema bootstrap (tables + seeded login row)
+- [x] Migrate all modules from `mysql.connector` to `sqlite3` (`?` placeholders, `COALESCE||` search chains, proper JOINs)
+- [x] Verify: compile + db smoke tests (FK block, CHECK constraints, idempotent seed) + app launch
 
-## Medium priority — robustness & hygiene
+## Medium priority — robustness & hygiene  ✅ DONE
 
-- [ ] Replace bare excepts with `sqlite3.Error` catches in delete flows
-- [ ] Create `requirements.txt` (tkcalendar only; sqlite3 is stdlib)
-- [ ] Resolve PNG asset paths via `os.path` relative to `__file__` (+ PyInstaller `sys._MEIPASS` support)
-- [ ] Hash login passwords (sha256), seed hash at bootstrap, compare hashes in `Login.login()`
-- [ ] Change `RetourneEmprunt` to UPDATE existing `sortie` row instead of INSERT new row
-- [ ] Update `AGENTS.md` + `README.md` to reflect SQLite architecture
+- [x] Replace bare excepts with `sqlite3.IntegrityError` / `sqlite3.Error` catches in delete flows (+ `finally` close)
+- [x] Create `requirements.txt` (tkcalendar only; sqlite3 is stdlib)
+- [x] Resolve PNG asset paths via `paths.asset_path()` (`__file__` + PyInstaller `sys._MEIPASS`)
+- [x] Hash login passwords (PBKDF2-HMAC-SHA256, salted), seed hash at bootstrap, auto-upgrade legacy plaintext rows
+- [x] Change `RetourneEmprunt` to UPDATE existing `sortie` row instead of INSERT new row (rowcount guard)
+- [x] Optional international tel validation (empty allowed, 7-15 digits, `+`/spaces/dashes/parens/dots)
+- [x] Update `AGENTS.md` + `README.md` to reflect SQLite architecture
 
-## Low priority — packaging & extras
+## Low priority — packaging
 
-- [ ] Convert `icon.png` to `icon.ico` for exe/taskbar icon
-- [ ] Build `.exe` with PyInstaller (`--windowed --add-data "*.png;."`) and test launch on clean machine
-- [ ] Optional: add emprunt edit/delete pages + due date column
+- [x] Convert `icon.png` to multi-size `icon.ico` (16→256px)
+- [x] Build `.exe` with PyInstaller onefile/windowed — verified launch + DB creation next to exe (22.9 MB)
+- [ ] Test the exe on a clean machine without Python installed (copy `dist\bibliotheque.exe` alone)
+
+## Optional enhancements
+
+- [ ] Emprunt edit/delete pages + due date column / late-loan highlighting

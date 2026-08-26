@@ -2,7 +2,7 @@ import tkinter.messagebox
 from tkinter import *
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
-from datetime import datetime
+from datetime import datetime, timedelta
 from db import connect
 from paths import asset_path
 import re
@@ -11,6 +11,8 @@ bgColor = "#00c9a7"
 prColor = "#12192c"
 prLightColor = "#c4fff3"
 textHolderColor = "#7a7e89"
+
+LOAN_DAYS = 14
 
 
 # validation function
@@ -53,6 +55,23 @@ def clearPage(root):
 
 STATUS_LABELS = {"sortie": "Borrowed", "entree": "Returned"}
 
+OVERDUE_BG = "#ffb3b3"
+
+
+def format_emprunt_row(item, today):
+    """Return (display_values, tags); tags is ('overdue',) or None for zebra rows."""
+    values = list(item)
+    status = values[-1]
+    values[-1] = STATUS_LABELS.get(status, status)
+    due = values[4]
+    if status == "sortie" and due:
+        try:
+            if today > datetime.strptime(due, "%Y-%m-%d").date():
+                return values, ("overdue",)
+        except ValueError:
+            pass
+    return values, None
+
 
 class AfficherEmprunts():
     def __init__(self, root):
@@ -88,12 +107,13 @@ class AfficherEmprunts():
         connection = connect()
 
         cursor = connection.cursor()
-        cursor.execute("select e.idEmp, a.nom, l.titre, e.dateemprunt, e.status from emprunt e "
+        cursor.execute("select e.idEmp, a.nom, l.titre, e.dateemprunt, e.dateretourprevue, e.status from emprunt e "
                        "join adherent a on e.idAdh = a.idAdh join livre l on e.idLiv = l.idLiv order by e.idEmp")
         data = cursor.fetchall()
-        columns = ('ID', 'Member', 'Book Title', 'Loan Date', 'Status')
+        columns = ('ID', 'Member', 'Book Title', 'Loan Date', 'Due Date', 'Status')
         self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings", style="Custom.Treeview")
         self.tree.tag_configure("oddrow", background="lightblue")
+        self.tree.tag_configure("overdue", background=OVERDUE_BG)
 
         # Create a scrollbar
         self.tree_scroll = ttk.Scrollbar(self.tree)
@@ -105,10 +125,12 @@ class AfficherEmprunts():
             self.tree.heading(col, text=col, command=lambda _col=col: self.trierColumn(self.tree, _col, False))
             self.tree.column(col, width=100, stretch=True)
 
+        today = datetime.today().date()
         for i, item in enumerate(data):
-            values = list(item)
-            values[4] = STATUS_LABELS.get(values[4], values[4])
-            self.tree.insert("", "end", values=values, tags=("oddrow" if i % 2 == 1 else ""))
+            values, tags = format_emprunt_row(item, today)
+            if tags is None:
+                tags = ("oddrow",) if i % 2 == 1 else ()
+            self.tree.insert("", "end", values=values, tags=tags)
 
         self.tree.pack(fill="both", expand=True)
         cursor.close()
@@ -152,18 +174,21 @@ class AfficherEmprunts():
 
             cursor = connection.cursor()
             cursor.execute(
-                "SELECT e.idEmp, a.nom, l.titre, e.dateemprunt, e.status FROM emprunt e "
+                "SELECT e.idEmp, a.nom, l.titre, e.dateemprunt, e.dateretourprevue, e.status FROM emprunt e "
                 "JOIN adherent a ON e.idAdh = a.idAdh JOIN livre l ON e.idLiv = l.idLiv "
                 "WHERE (COALESCE(e.idEmp,'') || ' ' || COALESCE(a.nom,'') || ' ' || COALESCE(l.titre,'') || ' ' || "
-                "COALESCE(e.dateemprunt,'') || ' ' || COALESCE(e.status,'')) LIKE ?",
+                "COALESCE(e.dateemprunt,'') || ' ' || COALESCE(e.dateretourprevue,'') || ' ' || "
+                "COALESCE(e.status,'')) LIKE ?",
                 ('%' + query + '%',))
             data = cursor.fetchall()
 
             tree.delete(*tree.get_children())
+            today = datetime.today().date()
             for i in range(len(data)):
-                item = list(data[i])
-                item[4] = STATUS_LABELS.get(item[4], item[4])
-                self.tree.insert("", "end", values=item, tags=("oddrow" if i % 2 == 1 else ""))
+                values, tags = format_emprunt_row(data[i], today)
+                if tags is None:
+                    tags = ("oddrow",) if i % 2 == 1 else ()
+                self.tree.insert("", "end", values=values, tags=tags)
 
         search_button = Button(search_frame, text="Search", command=search_tree, font=('Rubik', 12), bg=prColor,
                                relief="solid", cursor="hand2", fg="white", activebackground=bgColor,
@@ -223,6 +248,14 @@ class PrendreEmprunt():
                                foreground="white", borderwidth=2, state="readonly", date_pattern='dd/mm/yyyy')
         self.date_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
 
+        # due date Entry
+        self.due_label = Label(self.form_options, text="Due date:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.due_label.grid(row=5, column=0, padx=10, pady=10, sticky="e")
+        self.due_entry = DateEntry(self.form_options, width=30, background="#b23a48", font=('Rubik', 12),
+                               foreground="white", borderwidth=2, state="readonly", date_pattern='dd/mm/yyyy')
+        self.due_entry.grid(row=5, column=1, padx=10, pady=10, sticky="w")
+        self.due_entry.set_date(datetime.today() + timedelta(days=LOAN_DAYS))
+
 
         self.modify_button = Button(self.form_options, width=16, text="Borrow", bg=bgColor, fg=prColor,
                                     relief="solid",
@@ -236,11 +269,14 @@ class PrendreEmprunt():
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
             messagebox.showinfo("Error", "Please select all fields.")
             return
-        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
-        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
+        date_emprunt = self.date_entry.get_date()
+        date_retour_prevue = self.due_entry.get_date()
         aujourdhui = datetime.today().date()
-        if aujourdhui > date_emprunt.date():
-            messagebox.showinfo("Date validation", "The date must be today or later.")
+        if date_emprunt > aujourdhui:
+            messagebox.showinfo("Date validation", "The loan date cannot be in the future.")
+            return
+        if date_retour_prevue < date_emprunt:
+            messagebox.showinfo("Date validation", "The due date must be on or after the loan date.")
             return
         livre_id = self.livre_combobox.get().split('-')[0].strip()
         adherent_id = self.adherent_combobox.get().split('-')[0].strip()
@@ -248,8 +284,9 @@ class PrendreEmprunt():
         connection = connect()
         cursor = connection.cursor()
 
-        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (?, ?, ?, ?)",
-                       (adherent_id, livre_id, date_emprunt_mysql, "sortie"))
+        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, dateretourprevue, status) VALUES (?, ?, ?, ?, ?)",
+                       (adherent_id, livre_id, date_emprunt.strftime('%Y-%m-%d'),
+                        date_retour_prevue.strftime('%Y-%m-%d'), "sortie"))
         cursor.execute("UPDATE livre SET disponible = 'non' WHERE idLiv = ?", (livre_id,))
         connection.commit()
         cursor.close()

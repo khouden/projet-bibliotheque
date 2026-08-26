@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS emprunt (
     idAdh INTEGER NOT NULL REFERENCES adherent(idAdh),
     idLiv INTEGER NOT NULL REFERENCES livre(idLiv),
     dateemprunt TEXT NOT NULL,
+    dateretourprevue TEXT,
     status TEXT NOT NULL CHECK (status IN ('sortie', 'entree'))
 );
 """
@@ -96,11 +97,18 @@ def _migrate_login_table(cursor):
                        (legacy_password,))
 
 
+def _migrate_emprunt_table(cursor):
+    cols = [row[1] for row in cursor.execute("PRAGMA table_info(emprunt)").fetchall()]
+    if "dateretourprevue" not in cols:
+        cursor.execute("ALTER TABLE emprunt ADD COLUMN dateretourprevue TEXT")
+
+
 def init_db():
     connection = connect()
     cursor = connection.cursor()
     cursor.executescript(SCHEMA)
     _migrate_login_table(cursor)
+    _migrate_emprunt_table(cursor)
     cursor.execute("SELECT COUNT(*) FROM login")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO login (id, password, must_change) VALUES (1, ?, 1)",

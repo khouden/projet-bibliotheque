@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 bibliotheque.db
+error.log
 build/
 dist/
 *.spec

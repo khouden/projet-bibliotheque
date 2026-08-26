@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk,messagebox
 from db import connect
+from paths import asset_path
 from mainMenu import MainMenu
 
 
@@ -15,7 +16,7 @@ class Login:
         self.root.geometry('925x600')
         self.root.configure(background=bgColor)
         self.root.resizable(False, False)
-        self.icon_image = PhotoImage(file="icon.png")  # Replace with your icon file path
+        self.icon_image = PhotoImage(file=asset_path("icon.png"))  # Replace with your icon file path
         self.root.iconphoto(False, self.icon_image)
         
         #content frame
@@ -23,7 +24,7 @@ class Login:
         self.contentframe.pack(expand=True, fill="both")
 
         # login image
-        self.img = PhotoImage(file='login2.png')
+        self.img = PhotoImage(file=asset_path('login2.png'))
         self.imgLabel = Label(self.contentframe, image=self.img, bg=bgColor)
         self.imgLabel.image = self.img
         self.imgLabel.place(x=20, y=20)

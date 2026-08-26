@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox
 
+from paths import asset_path
 from livre import *
 from adherent import *
 from emprunt import *
@@ -31,7 +32,7 @@ class MainMenu:
         self.root.title("Bibliothèque - Main")
         self.contentframe = Frame(self.root, bg=bgColor)
         self.contentframe.pack(expand=True, fill="both")
-        self.bg_image = PhotoImage(file="background.png")
+        self.bg_image = PhotoImage(file=asset_path("background.png"))
 
         self.background_label = Label(self.contentframe, image=self.bg_image)
         self.background_label.pack()

@@ -2,6 +2,7 @@ import tkinter.messagebox
 from tkinter import *
 from tkinter import ttk, messagebox
 from db import connect
+from paths import asset_path
 import re
 import sqlite3
 
@@ -204,7 +205,7 @@ class AjouterLivre():
         self.contentframe.pack(expand=True, fill="both")
 
         #image
-        self.ajouteimage= PhotoImage(file="ajouter_livre.png")
+        self.ajouteimage= PhotoImage(file=asset_path("ajouter_livre.png"))
         self.labelImage = Label(self.contentframe, image=self.ajouteimage, border=0)
         self.labelImage.image = self.ajouteimage
         self.labelImage.place(x=0, y=0)

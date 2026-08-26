@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
 from datetime import datetime
 from db import connect
+from paths import asset_path
 import re
 
 bgColor = "#00c9a7"
@@ -178,7 +179,7 @@ class PrendreEmprunt():
         self.contentframe.pack(expand=True, fill="both")
 
         # image
-        self.ajouteimage = PhotoImage(file="ajouter_emprunt.png")
+        self.ajouteimage = PhotoImage(file=asset_path("ajouter_emprunt.png"))
         self.labelImage = Label(self.contentframe, image=self.ajouteimage, border=0)
         self.labelImage.image = self.ajouteimage
         self.labelImage.place(x=0, y=0)
@@ -279,7 +280,7 @@ class RetourneEmprunt():
         self.contentframe.pack(expand=True, fill="both")
 
         # image
-        self.ajouteimage = PhotoImage(file="ajouter_emprunt.png")
+        self.ajouteimage = PhotoImage(file=asset_path("ajouter_emprunt.png"))
         self.labelImage = Label(self.contentframe, image=self.ajouteimage, border=0)
         self.labelImage.image = self.ajouteimage
         self.labelImage.place(x=0, y=0)

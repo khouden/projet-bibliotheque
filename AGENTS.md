@@ -11,7 +11,7 @@ It manages three entities:
 - **Adherent** (members): add, list/search/sort, modify, delete
 - **Emprunt** (loans): take a book (status `sortie`), return a book (status `entree`), list/search loans
 
-Authentication is a single login screen backed by a `login` table. Default seeded account: **admin / admin** (stored as a PBKDF2 hash).
+Authentication is **password-only** (no username). On first launch a setup screen asks the user to define their password (stored as a PBKDF2 hash with `must_change=1`); afterwards a single login field is shown.
 
 ## Tech Stack
 
@@ -28,16 +28,16 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Log in with `admin` / `admin`. Delete `bibliotheque.db` to reset to factory state (auto re-seeded on next start).
+Log in with your password (first launch opens the "Première utilisation" screen to define it). Delete `bibliotheque.db` to reset to factory state (setup screen reappears on next start).
 
 ## File Map
 
 | File | Role |
 |---|---|
 | `main.py` | Entry point. Calls `init_db()` then creates root window (925x600) and starts `Login`. |
-| `login.py` | Login screen class `Login`. Fetches the user by username, verifies PBKDF2 hash via `db.verify_password`, then swaps content frame for `MainMenu`. |
+| `login.py` | `Login`: single password field, verifies PBKDF2 hash via `db.verify_password`, then swaps content frame for `MainMenu`. Also hosts `FirstSetup`, the first-run "define your password" screen. |
 | `mainMenu.py` | `MainMenu`: menubar (options/Livre/Adherent/Emprunt) + home screen with 3 comboboxes acting as quick navigation. Routes to page classes via `match/case`. |
-| `db.py` | SQLite layer: `connect()` (foreign keys ON), `init_db()` (schema bootstrap + seeding + plaintext-password upgrade), `hash_password`/`verify_password` (PBKDF2-HMAC-SHA256, stored as `salt$digest` hex). |
+| `db.py` | SQLite layer: `connect()` (foreign keys ON), `init_db()` (schema bootstrap + legacy-table migration), `needs_setup()`/`set_password()`, `hash_password`/`verify_password` (PBKDF2-HMAC-SHA256, stored as `salt$digest` hex). |
 | `paths.py` | `asset_path(filename)`: resolves PNG assets relative to the script dir, or `sys._MEIPASS` when frozen by PyInstaller. |
 | `livre.py` | Book pages: `AfficherLivres` (Treeview + search + column sort), `AjouterLivre`, `ModifierLivre` (also delete). Shared `valider_donnees()` and `clearPage()`. |
 | `adherent.py` | Member pages: `AfficherAdherents`, `AjouterAdherent`, `ModifierAdherent` (also delete). Own copy of `valider_donnees()` / `clearPage()`. |
@@ -53,8 +53,9 @@ Created by `db.init_db()` if missing:
 
 ```sql
 CREATE TABLE login (
-    username TEXT PRIMARY KEY,
-    password TEXT NOT NULL              -- format: hex_salt$hex_digest (PBKDF2-SHA256, 100k iters)
+    id INTEGER PRIMARY KEY CHECK (id = 1),   -- single-row table
+    password TEXT NOT NULL,                  -- format: hex_salt$hex_digest (PBKDF2-SHA256, 100k iters)
+    must_change INTEGER NOT NULL DEFAULT 1   -- 1 = password not yet defined -> FirstSetup screen
 );
 CREATE TABLE livre (
     idLiv INTEGER PRIMARY KEY AUTOINCREMENT,

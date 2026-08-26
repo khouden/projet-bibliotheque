@@ -43,8 +43,9 @@ def connect():
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS login (
-    username TEXT PRIMARY KEY,
-    password TEXT NOT NULL
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    password TEXT NOT NULL,
+    must_change INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS livre (
@@ -73,20 +74,56 @@ CREATE TABLE IF NOT EXISTS emprunt (
 """
 
 
+LOGIN_DDL = """
+CREATE TABLE login (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    password TEXT NOT NULL,
+    must_change INTEGER NOT NULL DEFAULT 1
+)
+"""
+
+
+def _migrate_login_table(cursor):
+    cols = [row[1] for row in cursor.execute("PRAGMA table_info(login)").fetchall()]
+    if "username" not in cols:
+        return
+    row = cursor.execute("SELECT password FROM login").fetchone()
+    legacy_password = row[0] if row else None
+    cursor.execute("DROP TABLE login")
+    cursor.execute(LOGIN_DDL)
+    if legacy_password and "$" in legacy_password:
+        cursor.execute("INSERT INTO login (id, password, must_change) VALUES (1, ?, 0)",
+                       (legacy_password,))
+
+
 def init_db():
     connection = connect()
     cursor = connection.cursor()
     cursor.executescript(SCHEMA)
+    _migrate_login_table(cursor)
     cursor.execute("SELECT COUNT(*) FROM login")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO login (username, password) VALUES (?, ?)",
-                       ("admin", hash_password("admin")))
-    else:
-        cursor.execute("SELECT username, password FROM login")
-        for username, password in cursor.fetchall():
-            if "$" not in password:
-                cursor.execute("UPDATE login SET password=? WHERE username=?",
-                               (hash_password(password), username))
+        cursor.execute("INSERT INTO login (id, password, must_change) VALUES (1, ?, 1)",
+                       (hash_password(os.urandom(16).hex()),))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+def needs_setup():
+    connection = connect()
+    cursor = connection.cursor()
+    row = cursor.execute("SELECT must_change FROM login WHERE id = 1").fetchone()
+    cursor.close()
+    connection.close()
+    return row is None or bool(row[0])
+
+
+def set_password(password):
+    connection = connect()
+    cursor = connection.cursor()
+    cursor.execute("INSERT OR REPLACE INTO login (id, password, must_change) VALUES (1, ?, 0)",
+                   (hash_password(password),))
     connection.commit()
     cursor.close()
     connection.close()

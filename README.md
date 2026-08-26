@@ -23,9 +23,9 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Identifiants par défaut : **admin** / **admin**
+Au premier lancement, l'application affiche l'écran **Première utilisation** : définissez votre mot de passe, puis connectez-vous avec celui-ci.
 
-> Pour réinitialiser l'application : supprimer `bibliotheque.db`, elle sera recréée au prochain démarrage.
+> Pour réinitialiser l'application : supprimer `bibliotheque.db`, l'écran de définition du mot de passe réapparaîtra au prochain démarrage.
 
 ## Structure du projet
 

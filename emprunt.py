@@ -22,14 +22,15 @@ def valider_donnees(nom, tel, email):
             messagebox.showerror("Erreur", "Le nom doit contenir au moins 2 lettres alphabétiques.")
         return False
 
-    # Vérification du téléphone (10 chiffres commençant par 06, 07 ou 05)
-    if not re.match(r'^(06|07|05)\d{8}$', tel):
-        if len(tel) == 0:
-            messagebox.showerror("Erreur", "Le numéro de téléphone est obligatoire.")
-        else:
-            messagebox.showerror("Erreur",
-                                 "Le numéro de téléphone doit contenir 10 chiffres et commencer par 06, 07 ou 05.")
-        return False
+    # Vérification du téléphone (optionnel, format international)
+    if tel:
+        if not re.match(r'^\+?[\d\s\-\(\)\.]+$', tel.strip()):
+            messagebox.showerror("Erreur", "Le numéro de téléphone contient des caractères invalides.")
+            return False
+        chiffres = re.sub(r'\D', '', tel)
+        if not 7 <= len(chiffres) <= 15:
+            messagebox.showerror("Erreur", "Le numéro de téléphone doit contenir entre 7 et 15 chiffres.")
+            return False
 
     # Vérification de l'email (format email)
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):

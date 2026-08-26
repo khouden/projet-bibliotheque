@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from db import connect
 import re
+import sqlite3
 
 bgColor = "#00c9a7"
 prColor = "#12192c"
@@ -20,14 +21,15 @@ def valider_donnees(nom, tel, email):
             messagebox.showerror("Erreur", "Le nom doit contenir au moins 2 lettres alphabétiques.")
         return False
 
-    # Vérification du téléphone (10 chiffres commençant par 06, 07 ou 05)
-    if not re.match(r'^(06|07|05)\d{8}$', tel):
-        if len(tel) == 0:
-            messagebox.showerror("Erreur", "Le numéro de téléphone est obligatoire.")
-        else:
-            messagebox.showerror("Erreur",
-                                 "Le numéro de téléphone doit contenir 10 chiffres et commencer par 06, 07 ou 05.")
-        return False
+    # Vérification du téléphone (optionnel, format international)
+    if tel:
+        if not re.match(r'^\+?[\d\s\-\(\)\.]+$', tel.strip()):
+            messagebox.showerror("Erreur", "Le numéro de téléphone contient des caractères invalides.")
+            return False
+        chiffres = re.sub(r'\D', '', tel)
+        if not 7 <= len(chiffres) <= 15:
+            messagebox.showerror("Erreur", "Le numéro de téléphone doit contenir entre 7 et 15 chiffres.")
+            return False
 
     # Vérification de l'email (format email)
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
@@ -190,7 +192,7 @@ class AjouterAdherent():
         self.nom_entry.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
         # telephone entry
-        self.tel_label = Label(self.form_options, text="Telephone:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.tel_label = Label(self.form_options, text="Telephone (optionnel):", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.tel_label.grid(row=3, column=0, padx=10, pady=10, sticky="e")
         self.tel_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
@@ -283,7 +285,7 @@ class ModifierAdherent():
         self.nom_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
         # telephone entry
-        self.tel_label = Label(self.form_options, text="Telephone:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        self.tel_label = Label(self.form_options, text="Telephone (optionnel):", bg=bgColor, fg=prColor, font=('Rubik', 12))
         self.tel_label.grid(row=0, column=2, padx=10, pady=10, sticky="e")
         self.tel_entry = Entry(self.form_options, font=('Rubik', 12), fg=prColor, bg="lightblue", border=1,
                                highlightcolor="black", relief="solid")
@@ -345,18 +347,16 @@ class ModifierAdherent():
 
 
     def supprimer_adherent(self):
-        try:
-            if not self.tree.selection():
-                tkinter.messagebox.showwarning("invalid choix", "veuillez selectionner une adherent!")
-                return
-            selected_item = self.tree.selection()
-            if selected_item:
-                response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette adherent?")
-
-                if response:
-                    connection = connect()
-                    cursor = connection.cursor()
-
+        if not self.tree.selection():
+            tkinter.messagebox.showwarning("invalid choix", "veuillez selectionner une adherent!")
+            return
+        selected_item = self.tree.selection()
+        if selected_item:
+            response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette adherent?")
+            if response:
+                connection = connect()
+                cursor = connection.cursor()
+                try:
                     cursor.execute("DELETE FROM Adherent WHERE idAdh=?", (self.selected_adherent_id,))
                     connection.commit()
                     messagebox.showinfo("Success", "Adherent a été supprimé avec succée")
@@ -364,8 +364,14 @@ class ModifierAdherent():
                     self.nom_entry.delete(0, END)
                     self.tel_entry.delete(0, END)
                     self.email_entry.delete(0, END)
-        except:
-            messagebox.showerror("Erreur", "vous ne pouvez pas supprimer cet adherent, cet adherent a déja un emprunt")
+                except sqlite3.IntegrityError:
+                    messagebox.showerror("Erreur",
+                                         "vous ne pouvez pas supprimer cet adherent, cet adherent a déja un emprunt")
+                except sqlite3.Error as e:
+                    messagebox.showerror("Erreur", f"Erreur lors de la suppression de l'adherent : {e}")
+                finally:
+                    cursor.close()
+                    connection.close()
 
     def selecterCol(self, event):
         if not self.tree.selection():

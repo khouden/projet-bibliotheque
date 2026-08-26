@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from db import connect
 import re
+import sqlite3
 
 bgColor = "#00c9a7"
 prColor = "#12192c"
@@ -434,9 +435,9 @@ class ModifierLivre():
         if selected_item:
             response = messagebox.askyesno("Confirm", "Êtes vous sure de supprimer cette livre?")
             if response:
+                connection = connect()
+                cursor = connection.cursor()
                 try:
-                    connection = connect()
-                    cursor = connection.cursor()
                     cursor.execute("DELETE FROM Livre WHERE idLiv=?", (self.selected_book_id,))
                     connection.commit()
                     messagebox.showinfo("Success", "Le livre a été supprimé avec succé")
@@ -445,9 +446,14 @@ class ModifierLivre():
                     self.auteur_entry.delete(0, END)
                     self.pages_entry.delete(0, END)
                     self.prix_entry.delete(0, END)
-                except:
+                except sqlite3.IntegrityError:
                     messagebox.showerror("Erreur",
                                          "vous ne pouvez pas supprimer cet livre, cet livre a déja un emprunt")
+                except sqlite3.Error as e:
+                    messagebox.showerror("Erreur", f"Erreur lors de la suppression du livre : {e}")
+                finally:
+                    cursor.close()
+                    connection.close()
 
     def selecterCol(self, event):
         if not self.tree.selection():

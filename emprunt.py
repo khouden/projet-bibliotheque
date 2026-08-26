@@ -63,10 +63,17 @@ def format_emprunt_row(item, today):
     values = list(item)
     status = values[-1]
     values[-1] = STATUS_LABELS.get(status, status)
+    for idx in (3, 4):
+        raw = values[idx]
+        if raw:
+            try:
+                values[idx] = datetime.strptime(raw, "%Y-%m-%d").strftime("%d/%m/%Y")
+            except ValueError:
+                pass
     due = values[4]
     if status == "sortie" and due:
         try:
-            if today > datetime.strptime(due, "%Y-%m-%d").date():
+            if today > datetime.strptime(due, "%d/%m/%Y").date():
                 return values, ("overdue",)
         except ValueError:
             pass
@@ -426,4 +433,243 @@ class RetourneEmprunt():
         connection.commit()
         cursor.close()
         connection.close()
+
+
+class ModifierEmprunt():
+    def __init__(self, root):
+        self.root = root
+        self.root.config(bg=bgColor)
+        self.root.title("Library - Edit Loan")
+
+        self.style = ttk.Style()
+        self.style.configure("Custom.Treeview",
+                             background="white", foreground="black", rowheight=25,
+                             fieldbackground="white", font=('Rubik', 10))
+        self.style.configure("Custom.Treeview.Heading",
+                             background=prColor, foreground="white", font=('Rubik', 12))
+        self.style.map('Custom.Treeview',
+                       background=[('selected', bgColor)], foreground=[('selected', 'white')])
+
+        self.contentframe = Frame(self.root, bg=bgColor, padx=50, pady=50)
+        self.contentframe.pack(expand=True, fill="both")
+
+        columns = ('ID', 'Member', 'Book Title', 'Loan Date', 'Due Date', 'Status')
+        self.tree = ttk.Treeview(self.contentframe, columns=columns, show="headings",
+                                 style="Custom.Treeview")
+        self.tree_scroll = ttk.Scrollbar(self.tree)
+        self.tree_scroll.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=self.tree_scroll.set)
+        self.tree_scroll.config(command=self.tree.yview)
+
+        for col in columns:
+            self.tree.heading(col, text=col, command=lambda _col=col: self.trierColumn(self.tree, _col, False))
+            self.tree.column(col, width=100, stretch=True)
+
+        self.tree.column('ID', width=40)
+        self.tree.column('Member', width=140)
+        self.tree.column('Book Title', width=160)
+        self.tree.column('Loan Date', width=110)
+        self.tree.column('Due Date', width=110)
+
+        self.tree.bind("<<TreeviewSelect>>", self.selecterCol)
+        self.tree.tag_configure("oddrow", background="lightblue")
+        self.tree.tag_configure("overdue", background=OVERDUE_BG)
+        self.tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.form_options = Frame(self.contentframe, bg=bgColor, height=300)
+        self.form_options.pack(fill="x", padx=10, pady=10)
+
+        self.member_combobox = ttk.Combobox(self.form_options, font=('Rubik', 11), width=20)
+        self.member_combobox.grid(row=0, column=0, padx=10, pady=10)
+        member_label = Label(self.form_options, text="Member:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        member_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.member_combobox.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+
+        self.book_combobox = ttk.Combobox(self.form_options, font=('Rubik', 11), width=20)
+        self.book_combobox.grid(row=0, column=2, padx=10, pady=10)
+        book_label = Label(self.form_options, text="Book:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        book_label.grid(row=0, column=2, padx=10, pady=10, sticky="w")
+        self.book_combobox.grid(row=0, column=3, padx=10, pady=10, sticky="w")
+
+        loan_date_label = Label(self.form_options, text="Loan date:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        loan_date_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        self.loan_date_entry = DateEntry(self.form_options, width=18, background=prColor, font=('Rubik', 11),
+                                         foreground="white", borderwidth=2, state="readonly",
+                                         date_pattern='dd/mm/yyyy')
+        self.loan_date_entry.grid(row=1, column=1, padx=10, pady=10, sticky="w")
+
+        due_date_label = Label(self.form_options, text="Due date:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        due_date_label.grid(row=1, column=2, padx=10, pady=10, sticky="e")
+        self.due_date_entry = DateEntry(self.form_options, width=18, background="#b23a48", font=('Rubik', 11),
+                                        foreground="white", borderwidth=2, date_pattern='dd/mm/yyyy')
+        self.due_date_entry.grid(row=1, column=3, padx=10, pady=10, sticky="w")
+
+        status_label = Label(self.form_options, text="Status:", bg=bgColor, fg=prColor, font=('Rubik', 12))
+        status_label.grid(row=2, column=0, padx=10, pady=10, sticky="e")
+        self.status_combobox = ttk.Combobox(self.form_options, font=('Rubik', 11), width=18,
+                                            values=["Borrowed", "Returned"], state="readonly")
+        self.status_combobox.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+
+        self.modify_button = Button(self.form_options, width=16, text="Edit Loan", bg=bgColor, fg=prColor,
+                                    relief="solid", font=('Rubik', 12), cursor="hand2",
+                                    activebackground=prColor, activeforeground=bgColor,
+                                    pady=5, command=self.modifier_emprunt)
+        self.modify_button.grid(row=0, column=4, columnspan=2, padx=10, pady=10)
+
+        self.supprimer_button = Button(self.form_options, width=16, text="Delete Loan", bg="#e74c3c", fg=prColor,
+                                       relief="solid", font=('Rubik', 12), cursor="hand2",
+                                       activebackground=prColor, activeforeground=bgColor,
+                                       pady=5, command=self.supprimer_emprunt)
+        self.supprimer_button.grid(row=1, column=4, columnspan=2, padx=10, pady=10)
+
+        self.afficherInfo()
+        self.fill_comboboxes()
+
+    def selecterCol(self, event):
+        if not self.tree.selection():
+            return
+        selected_item = self.tree.selection()[0]
+        selected_values = self.tree.item(selected_item, "values")
+
+        self.selected_emprunt_id = selected_values[0]
+
+        self.member_combobox.set(selected_values[1])
+        self.book_combobox.set(selected_values[2])
+        self.loan_date_entry.set_date(datetime.strptime(selected_values[3], '%d/%m/%Y').date())
+        self.due_date_entry.set_date(datetime.strptime(selected_values[4], '%d/%m/%Y').date())
+        self.status_combobox.set(selected_values[5])
+
+        connection = connect()
+        cursor = connection.cursor()
+        cursor.execute("SELECT idAdh FROM emprunt WHERE idEmp=?", (self.selected_emprunt_id,))
+        row = cursor.fetchone()
+        self.original_book_id = None
+        self.original_status = None
+        if row:
+            cursor.execute(
+                "SELECT e.idLiv, e.status FROM emprunt e WHERE e.idEmp=?",
+                (self.selected_emprunt_id,))
+            row2 = cursor.fetchone()
+            if row2:
+                self.original_book_id = row2[0]
+                self.original_status = row2[1]
+        cursor.close()
+        connection.close()
+
+    def afficherInfo(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        connection = connect()
+        cursor = connection.cursor()
+        cursor.execute("select e.idEmp, a.nom, l.titre, e.dateemprunt, e.dateretourprevue, e.status from emprunt e "
+                       "join adherent a on e.idAdh = a.idAdh join livre l on e.idLiv = l.idLiv order by e.idEmp")
+        data = cursor.fetchall()
+        today = datetime.today().date()
+        for i, item in enumerate(data):
+            values, tags = format_emprunt_row(item, today)
+            if tags is None:
+                tags = ("oddrow",) if i % 2 == 1 else ()
+            self.tree.insert("", "end", values=values, tags=tags)
+        cursor.close()
+        connection.close()
+
+    def fill_comboboxes(self):
+        connection = connect()
+        cursor = connection.cursor()
+        cursor.execute("SELECT idAdh, nom FROM adherent ORDER BY idAdh")
+        self.member_combobox["values"] = [f"{r[0]} - {r[1]}" for r in cursor.fetchall()]
+        cursor.execute("SELECT idLiv, titre FROM livre ORDER BY idLiv")
+        self.book_combobox["values"] = [f"{r[0]} - {r[1]}" for r in cursor.fetchall()]
+        cursor.close()
+        connection.close()
+
+    def modifier_emprunt(self):
+        if not self.tree.selection():
+            messagebox.showwarning("Invalid choice", "Please select a loan!")
+            return
+        member_text = self.member_combobox.get().strip()
+        book_text = self.book_combobox.get().strip()
+        status_text = self.status_combobox.get()
+        if not member_text or not book_text:
+            messagebox.showerror("Error", "Please select a member and a book.")
+            return
+        try:
+            member_id = member_text.split('-')[0].strip()
+            book_id = book_text.split('-')[0].strip()
+        except (IndexError, ValueError):
+            messagebox.showerror("Error", "Invalid member or book selection.")
+            return
+        loan_date = self.loan_date_entry.get_date()
+        due_date = self.due_date_entry.get_date()
+        if due_date < loan_date:
+            messagebox.showerror("Error", "Due date must be on or after loan date.")
+            return
+        status_map = {"Borrowed": "sortie", "Returned": "entree"}
+        new_status = status_map.get(status_text)
+        if not new_status:
+            messagebox.showerror("Error", "Please select a valid status.")
+            return
+
+        connection = connect()
+        cursor = connection.cursor()
+        try:
+            old_book_id = getattr(self, 'original_book_id', None)
+            old_status = getattr(self, 'original_status', None)
+
+            if old_book_id is not None and str(book_id) != str(old_book_id):
+                cursor.execute("UPDATE livre SET disponible='oui' WHERE idLiv=?", (old_book_id,))
+
+            if new_status == 'sortie':
+                cursor.execute("UPDATE livre SET disponible='non' WHERE idLiv=?", (book_id,))
+            else:
+                cursor.execute("UPDATE livre SET disponible='oui' WHERE idLiv=?", (book_id,))
+
+            cursor.execute(
+                "UPDATE emprunt SET idAdh=?, idLiv=?, dateemprunt=?, dateretourprevue=?, status=? WHERE idEmp=?",
+                (member_id, book_id, loan_date.strftime('%Y-%m-%d'),
+                 due_date.strftime('%Y-%m-%d'), new_status, self.selected_emprunt_id))
+            connection.commit()
+            messagebox.showinfo("Success", "Loan updated successfully.")
+            self.afficherInfo()
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "Cannot update: the selected book or member does not exist.")
+        except sqlite3.Error as e:
+            messagebox.showerror("Error", f"Error updating loan: {e}")
+        finally:
+            cursor.close()
+            connection.close()
+
+    def supprimer_emprunt(self):
+        if not self.tree.selection():
+            messagebox.showwarning("Invalid choice", "Please select a loan!")
+            return
+        response = messagebox.askyesno("Confirm", "Are you sure you want to delete this loan?")
+        if not response:
+            return
+        connection = connect()
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT idLiv, status FROM emprunt WHERE idEmp=?", (self.selected_emprunt_id,))
+            row = cursor.fetchone()
+            cursor.execute("DELETE FROM emprunt WHERE idEmp=?", (self.selected_emprunt_id,))
+            if row and row[1] == 'sortie':
+                cursor.execute("UPDATE livre SET disponible='oui' WHERE idLiv=?", (row[0],))
+            connection.commit()
+            messagebox.showinfo("Success", "Loan deleted successfully.")
+            self.afficherInfo()
+        except sqlite3.Error as e:
+            messagebox.showerror("Error", f"Error deleting loan: {e}")
+        finally:
+            cursor.close()
+            connection.close()
+
+    def trierColumn(self, treeview, col, reverse):
+        data = [(treeview.set(k, col), k) for k in treeview.get_children('')]
+        try:
+            data.sort(key=lambda t: float(t[0]) if t[0] else 0, reverse=reverse)
+        except ValueError:
+            data.sort(key=lambda t: t[0], reverse=reverse)
+        for index, (val, k) in enumerate(data):
+            treeview.move(k, '', index)
+        treeview.heading(col, command=lambda: self.trierColumn(treeview, col, not reverse))
 

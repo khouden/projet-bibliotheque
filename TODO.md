@@ -1,31 +1,45 @@
-# TODO — Make projet-bibliotheque a shippable Windows app
+# TODO — projet-bibliotheque roadmap
 
-Decisions made: **migrated MySQL -> SQLite**, **modifier_emprunt deleted**.
+## ✅ Done (v1.0 core)
 
-## High priority — crash bugs & migration  ✅ DONE
+- [x] Fix crash bugs: `disponible_var` refs, `modifier_emprunt` misroute, negative pages/prix TypeError
+- [x] Migrate MySQL -> SQLite (`db.py`, bootstrap + seed, `?` placeholders, `COALESCE||` search, proper JOINs)
+- [x] Bare excepts -> targeted `sqlite3.IntegrityError`/`Error` handlers
+- [x] `requirements.txt` (tkcalendar only)
+- [x] cwd-independent asset paths (`paths.py`)
+- [x] PBKDF2-HMAC-SHA256 password hashing + legacy plaintext upgrade
+- [x] Password-only auth with first-run "define your password" screen (no default credentials)
+- [x] Return = UPDATE existing `sortie` row (rowcount guard), no duplicate rows
+- [x] Optional international phone validation (7-15 digits)
+- [x] Full English UI translation (+ status display mapping `Borrowed`/`Returned`)
+- [x] Enter-key submit on login/setup forms
+- [x] Multi-size `icon.ico`, PyInstaller onefile exe builds and runs
+- [x] Docs: AGENTS.md + README.md reflect current architecture
 
-- [x] Fix `livre.py` AttributeError: remove `self.disponible_var` references
-- [x] Delete `modifier_emprunt()` from `mainMenu.py`
-- [x] Create `db.py`: sqlite3 connection helper + first-run schema bootstrap (tables + seeded login row)
-- [x] Migrate all modules from `mysql.connector` to `sqlite3` (`?` placeholders, `COALESCE||` search chains, proper JOINs)
-- [x] Verify: compile + db smoke tests (FK block, CHECK constraints, idempotent seed) + app launch
+## 🔴 P0 — before release
 
-## Medium priority — robustness & hygiene  ✅ DONE
+- [x] Global crash handler: catch uncaught exceptions, write `error.log`, show friendly dialog (windowed exe hides tracebacks)
+- [x] "Change password" entry in Options menu (reuse `db.set_password()`)
+- [x] Due dates: store expected return date, highlight overdue loans red in list, "N days late" hint
+- [x] Loan edit/delete pages (fix data-entry mistakes)
 
-- [x] Replace bare excepts with `sqlite3.IntegrityError` / `sqlite3.Error` catches in delete flows (+ `finally` close)
-- [x] Create `requirements.txt` (tkcalendar only; sqlite3 is stdlib)
-- [x] Resolve PNG asset paths via `paths.asset_path()` (`__file__` + PyInstaller `sys._MEIPASS`)
-- [x] Hash login passwords (PBKDF2-HMAC-SHA256, salted), seed hash at bootstrap, auto-upgrade legacy plaintext rows
-- [x] Change `RetourneEmprunt` to UPDATE existing `sortie` row instead of INSERT new row (rowcount guard)
-- [x] Optional international tel validation (empty allowed, 7-15 digits, `+`/spaces/dashes/parens/dots)
-- [x] Update `AGENTS.md` + `README.md` to reflect SQLite architecture
+## 🟡 P1 — cheap wins / polish
 
-## Low priority — packaging
+- [ ] CSV export buttons for books/members/loans
+- [ ] Home dashboard stats on background image (total books · available · members · active loans)
+- [ ] Live search (filter as you type) + Clear button on all list pages
+- [ ] High-DPI awareness call so text isn't blurry on modern laptops
+- [ ] Double-click a row in a list -> opens Edit page preselected
 
-- [x] Convert `icon.png` to multi-size `icon.ico` (16→256px)
-- [x] Build `.exe` with PyInstaller onefile/windowed — verified launch + DB creation next to exe (22.9 MB)
-- [ ] Test the exe on a clean machine without Python installed (copy `dist\bibliotheque.exe` alone)
+## 🟢 P2 — optional / v2
 
-## Optional enhancements
+- [ ] Exe version info resource (product name/version in file Properties)
+- [ ] Inno Setup installer (vs portable exe)
+- [ ] DB backup copy (`bibliotheque.db.bak`) on exit
+- [ ] Borrow history per member/book view
 
-- [ ] Emprunt edit/delete pages + due date column / late-loan highlighting
+## 📦 Release checklist
+
+- [ ] Rebuild exe after any code change
+- [ ] Test exe on a clean machine without Python
+- [ ] Full manual pass: first-use setup, login, books CRUD, members CRUD, borrow/return cycle, overdue display, change password

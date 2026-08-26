@@ -52,7 +52,7 @@ class MainMenu:
         # loans combobox
         self.emprunt_combobox = ttk.Combobox(self.contentframe, font=('Rubik', 12), state="readonly", width=18)
         self.emprunt_combobox.place(x=606, y=430)
-        self.emprunt_combobox["values"] = ['list loans', 'borrow a book', 'return a book']
+        self.emprunt_combobox["values"] = ['list loans', 'borrow a book', 'return a book', 'edit loans']
         self.emprunt_combobox.bind("<<ComboboxSelected>>", self.choisir_emprunt)
 
     def create_menus(self):
@@ -97,6 +97,8 @@ class MainMenu:
         self.prendre_menu.add_command(label="Borrow a book", command=self.prendre_emprunt)
 
         self.prendre_menu.add_command(label="Return a book", command=self.retourner_emprunt)
+
+        self.emprunt_menu.add_command(label="Edit loan", command=self.modifier_emprunts)
 
         # emprunt_menu.add_command(label="Modifier", command=lambda: EmpruntManagement(self.root, self.app).modify_emprunt())
 
@@ -147,6 +149,8 @@ class MainMenu:
                 self.prendre_emprunt()
             case "return a book":
                 self.retourner_emprunt()
+            case "edit loans":
+                self.modifier_emprunts()
     # livre
     def lister_livres(self):
         self.clear_widgets()
@@ -183,6 +187,11 @@ class MainMenu:
     def retourner_emprunt(self):
         self.clear_widgets()
         RetourneEmprunt(self.root)
+
+    def modifier_emprunts(self):
+        self.clear_widgets()
+        from emprunt import ModifierEmprunt
+        ModifierEmprunt(self.root)
 
     # fermer le widndow actuel
     def clear_widgets(self):

@@ -9,6 +9,12 @@ prColor = "#12192c"
 textHolderColor = "#7a7e89"
 
 
+def clearPage(root):
+    for widget in root.winfo_children():
+        if isinstance(widget, Frame):
+            widget.destroy()
+
+
 class Login:
     def __init__(self, root):
         self.root = root
@@ -185,4 +191,67 @@ class FirstSetup:
         set_password(password)
         messagebox.showinfo("Success", "Your password has been set successfully.")
         self.contentframe.pack_forget()
+        MainMenu(self.root)
+
+
+class ChangePassword:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Library - Change Password")
+        self.root.configure(background=bgColor)
+
+        self.contentframe = Frame(self.root, bg=bgColor)
+        self.contentframe.pack(expand=True, fill="both")
+
+        self.frame = Frame(self.contentframe, width=350, height=350, bg=bgColor)
+        self.frame.place(x=450, y=30)
+
+        self.title = Label(self.frame, text="Change password", fg=prColor, font=('Rubik', 20), bg=bgColor)
+        self.title.place(relx=0.5, rely=0.1, anchor="center")
+
+        self.current = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor, show="*")
+        self.current.place(relx=0.5, rely=0.3, anchor="center")
+        self.underline1 = Frame(self.frame, width=255, height=2, bg=prColor)
+        self.underline1.place(relx=0.5, rely=0.35, anchor="center")
+
+        self.new_password = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor, show="*")
+        self.new_password.place(relx=0.5, rely=0.47, anchor="center")
+        self.underline2 = Frame(self.frame, width=255, height=2, bg=prColor)
+        self.underline2.place(relx=0.5, rely=0.52, anchor="center")
+
+        self.confirm = Entry(self.frame, width=25, fg=prColor, border=0, font=('Rubik', 12), bg=bgColor, show="*")
+        self.confirm.place(relx=0.5, rely=0.64, anchor="center")
+        self.underline3 = Frame(self.frame, width=255, height=2, bg=prColor)
+        self.underline3.place(relx=0.5, rely=0.69, anchor="center")
+
+        self.update_button = Button(self.frame, width=29, pady=5, text="Update password", bg=prColor, fg="white",
+                                    relief="solid", activebackground=bgColor, activeforeground=prColor,
+                                    font=('Rubik', 11), cursor="hand2", command=self.update_password)
+        self.update_button.place(relx=0.5, rely=0.85, anchor="center")
+
+    def update_password(self):
+        current = self.current.get().strip()
+        new_password = self.new_password.get().strip()
+        confirm = self.confirm.get().strip()
+        if current == "" or new_password == "" or confirm == "":
+            messagebox.showerror("Error", "All fields are required.")
+            return
+        connection = connect()
+        cursor = connection.cursor()
+        cursor.execute("SELECT password FROM login WHERE id = 1")
+        row = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        if not row or not verify_password(current, row[0]):
+            messagebox.showerror("Error", "Current password is incorrect.")
+            return
+        if len(new_password) < 4:
+            messagebox.showerror("Error", "New password must be at least 4 characters long.")
+            return
+        if new_password != confirm:
+            messagebox.showerror("Error", "Passwords do not match.")
+            return
+        set_password(new_password)
+        messagebox.showinfo("Success", "Your password has been updated successfully.")
+        clearPage(self.root)
         MainMenu(self.root)

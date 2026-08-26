@@ -64,6 +64,7 @@ class MainMenu:
 
         self.menu.add_cascade(label="Options", menu=self.options_menu)
         self.options_menu.add_command(label="Home", command=self.home)
+        self.options_menu.add_command(label="Change password", command=self.change_password)
         self.options_menu.add_separator()
         self.options_menu.add_command(label="Quit", command=self.quitter)
 
@@ -113,6 +114,11 @@ class MainMenu:
     def quitter(self):
         if tkinter.messagebox.askyesno("Quit", "Do you want to quit?"):
             exit()
+
+    def change_password(self):
+        self.clear_widgets()
+        from login import ChangePassword
+        ChangePassword(self.root)
 
 
 

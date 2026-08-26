@@ -333,25 +333,23 @@ class RetourneEmprunt():
         if not self.livre_combobox.get() or not self.adherent_combobox.get():
             messagebox.showinfo("Erreur", "Vous devez sélectionner toutes les entrées.")
             return
-        date_emprunt = datetime.strptime(self.date_entry.get(), '%d/%m/%Y')
-        date_emprunt_mysql = date_emprunt.strftime('%Y-%m-%d')
-        aujourdhui = datetime.today().date()
-        if aujourdhui > date_emprunt.date():
-            messagebox.showinfo("Validation de la date", "La date doit être supérieure ou égale à la date d'aujourd'hui.")
-            return
         livre_id = self.livre_combobox.get().split('-')[0].strip()
         adherent_id = self.adherent_combobox.get().split('-')[0].strip()
 
         connection = connect()
         cursor = connection.cursor()
-
-        cursor.execute("INSERT INTO Emprunt (idAdh, idLiv, dateemprunt, status) VALUES (?, ?, ?, ?)",
-                       (adherent_id, livre_id, date_emprunt_mysql, "entree"))
-        cursor.execute("UPDATE livre SET disponible = 'oui' WHERE idLiv = ?", (livre_id,))
+        cursor.execute("UPDATE Emprunt SET status='entree' WHERE idAdh=? AND idLiv=? AND status='sortie'",
+                       (adherent_id, livre_id))
+        if cursor.rowcount == 0:
+            cursor.close()
+            connection.close()
+            messagebox.showerror("Erreur", "Aucun emprunt actif trouvé pour cet adherent et ce livre.")
+            return
+        cursor.execute("UPDATE livre SET disponible='oui' WHERE idLiv=?", (livre_id,))
         connection.commit()
         cursor.close()
         connection.close()
-        messagebox.showinfo("Success", "L'emprunt a été ajouté avec succès.")
+        messagebox.showinfo("Success", "Le livre a été retourné avec succès.")
         clearPage(self.root)
         AfficherEmprunts(self.root)
 
